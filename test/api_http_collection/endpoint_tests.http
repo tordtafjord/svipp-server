@@ -1,0 +1,206 @@
+### Set URL global variable
+GET https://svipp.app
+
+> {%
+    // Comment out depending on testing production or dev on localhost
+    //client.global.set("url", "https://svipp.app");
+    client.global.set("url", "http://localhost:8080");
+%}
+
+### MAKE SURE TEST USER EXISTS
+POST {{url}}/api/users
+Content-Type: application/json
+//Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Rob",
+  "phone": "{{$random.integer(10000000, 99999999)}}",
+  "email": "test@mail.com",
+  "password": "Password321",
+  "device_token": null
+
+}
+
+### Create Random USER
+POST {{url}}/api/users
+Content-Type: application/json
+//Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Rob",
+  "phone": "+47{{$random.integer(10000000, 99999999)}}",
+  "email": "{{$random.email}}",
+  "password": "Password321",
+  "device_token": null
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+### Authentication wrong password
+POST {{url}}/api/auth
+Content-Type: application/json
+
+{
+  "email": "test@mail.com",
+  "password": "Password3213",
+  "device_token": null
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+%}
+
+### Authenticate and retrieve token
+POST {{url}}/api/auth
+Content-Type: application/json
+
+{
+  "email": "test@mail.com",
+  "password": "Password321",
+  "device_token": null
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("auth_token", response.body.token);
+    });
+%}
+
+### Verify Token
+GET {{url}}/api/verify-token
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+### Try driver auth
+POST {{url}}/api/driver/auth
+Content-Type: application/json
+
+{
+  "email": "test@mail.com",
+  "password": "Password3211"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 403, "Response status is not 403");
+    });
+%}
+
+### Try driver verify-token
+POST {{url}}/api/driver/verify-token
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status !== 200, "Response status is not 405");
+    });
+%}
+
+
+### HEALTH
+GET {{url}}/health
+Content-Type: application/json
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Create Order
+POST {{url}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "pickup_address_id": 19135,
+  "delivery_address_id": 20842,
+  "pickup_address": "Dusviksvinger 10C, 4028 Stavanger",
+  "delivery_address": "Engøyklubben 30, 4077 Hundvåg"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        var orderId = response.body.id;
+        client.global.set("orderId", orderId);
+    });
+%}
+
+### Confirm Order
+POST {{url}}/api/orders/confirm
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "order_id": {{orderId}},
+  "recipient_phone": "+4741290110"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+### Create Order Not Authenticated
+POST {{url}}/api/orders
+Content-Type: application/json
+
+{
+  "pickup_address_id": 1,
+  "delivery_address_id": 2,
+  "pickup_address": "Sandvedmarka 26, 4318 Sandnes",
+  "delivery_address": "Sandvedmarka 46, 4318 Sandnes"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+%}
+
+### Get Current Users Orders
+GET {{url}}/api/orders/my
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get Current Users Orders Not Authenticated
+GET {{url}}/api/orders/my
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+%}
+
+
+
+
+
+
+
+
+

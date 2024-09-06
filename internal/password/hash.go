@@ -1,8 +1,6 @@
 package password
 
 import (
-	"errors"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -15,16 +13,6 @@ func Hash(plaintextPassword string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func Matches(plaintextPassword, hashedPassword string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plaintextPassword))
-	if err != nil {
-		switch {
-		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			return false, nil
-		default:
-			return false, err
-		}
-	}
-
-	return true, nil
+func CompareWithHash(plaintextPassword, hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plaintextPassword))
 }

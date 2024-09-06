@@ -1,43 +1,91 @@
 package main
 
 import (
-	"fmt"
-	"log/slog"
+	"context"
+	"crypto/subtle"
+	"errors"
+	"github.com/golang-jwt/jwt/v4"
 	"net/http"
-	"svipp-server/internal/response"
-
-	"github.com/tomasen/realip"
+	"svipp-server/internal/httputil"
 )
 
-func (app *application) recoverPanic(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			err := recover()
-			if err != nil {
-				app.serverError(w, r, fmt.Errorf("%s", err))
-			}
-		}()
+type JWTAuthMiddleware struct {
+	secretKey []byte
+}
 
-		next.ServeHTTP(w, r)
+func NewJWTAuthMiddleware(secretKey []byte) *JWTAuthMiddleware {
+	return &JWTAuthMiddleware{secretKey: secretKey}
+}
+
+// New type for context key
+type contextKey string
+
+const UserClaimsContextKey contextKey = "userClaims"
+
+// New custom claims struct
+type CustomClaims struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			httputil.UnauthorizedResponse(w, "Missing authorization header", nil) // Changed to app method
+			return
+		}
+
+		// Changed to use constant-time comparison
+		const bearerPrefix = "Bearer "
+		if len(authHeader) > len(bearerPrefix) && subtle.ConstantTimeCompare([]byte(authHeader[:len(bearerPrefix)]), []byte(bearerPrefix)) == 1 {
+			tokenString := authHeader[len(bearerPrefix):]
+			claims := &CustomClaims{} // Changed to CustomClaims
+
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				// Added signing method check
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, errors.New("unexpected signing method")
+				}
+				return m.secretKey, nil
+			})
+
+			if err != nil {
+				httputil.UnauthorizedResponse(w, "Error parsing jwt with claims", err) // New method for detailed error handling
+				return
+			}
+
+			if !token.Valid {
+				httputil.UnauthorizedResponse(w, "Invalid token", nil)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), UserClaimsContextKey, claims) // Changed context key
+			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			httputil.UnauthorizedResponse(w, "Invalid authorization header format", nil)
+		}
 	})
 }
 
-func (app *application) logAccess(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mw := response.NewMetricsResponseWriter(w)
-		next.ServeHTTP(mw, r)
+func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, ok := r.Context().Value(UserClaimsContextKey).(*CustomClaims)
+			if !ok {
+				httputil.UnauthorizedResponse(w, "User claims not found", nil)
+				return
+			}
 
-		var (
-			ip     = realip.FromRequest(r)
-			method = r.Method
-			url    = r.URL.String()
-			proto  = r.Proto
-		)
+			for _, role := range allowedRoles {
+				if claims.Role == role {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
 
-		userAttrs := slog.Group("user", "ip", ip)
-		requestAttrs := slog.Group("request", "method", method, "url", url, "proto", proto)
-		responseAttrs := slog.Group("repsonse", "status", mw.StatusCode, "size", mw.BytesCount)
-
-		app.logger.Info("access", userAttrs, requestAttrs, responseAttrs)
-	})
+			httputil.ErrorResponse(w, http.StatusForbidden, "Insufficient permissions", "Forbidden")
+		})
+	}
 }

@@ -34,8 +34,8 @@ func (q *Queries) CreateTemporaryUser(ctx context.Context, phone string) (int32,
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, phone, email, password, device_token, temporary)
-VALUES ($1, $2, $3, $4 ,$5, false)
-RETURNING id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at
+VALUES ($1, $2, $3, $4, $5, false)
+RETURNING id, name, phone, email
 `
 
 type CreateUserParams struct {
@@ -46,7 +46,14 @@ type CreateUserParams struct {
 	DeviceToken *string `json:"device_token"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+type CreateUserRow struct {
+	ID    int32   `json:"id"`
+	Name  *string `json:"name"`
+	Phone string  `json:"phone"`
+	Email *string `json:"email"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Name,
 		arg.Phone,
@@ -54,20 +61,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Password,
 		arg.DeviceToken,
 	)
-	var i User
+	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Phone,
 		&i.Email,
-		&i.Password,
-		&i.DeviceToken,
-		&i.Temporary,
-		&i.RateTotal,
-		&i.Rates,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -129,6 +128,31 @@ func (q *Queries) GetOrCreateTempUser(ctx context.Context, phone string) (User, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getUserBasicInfoById = `-- name: GetUserBasicInfoById :one
+SELECT id, name, phone, email
+FROM users
+WHERE id = $1
+`
+
+type GetUserBasicInfoByIdRow struct {
+	ID    int32   `json:"id"`
+	Name  *string `json:"name"`
+	Phone string  `json:"phone"`
+	Email *string `json:"email"`
+}
+
+func (q *Queries) GetUserBasicInfoById(ctx context.Context, id int32) (GetUserBasicInfoByIdRow, error) {
+	row := q.db.QueryRow(ctx, getUserBasicInfoById, id)
+	var i GetUserBasicInfoByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Phone,
+		&i.Email,
 	)
 	return i, err
 }

@@ -1,7 +1,14 @@
 -- name: CreateUser :one
 INSERT INTO users (name, phone, email, password, device_token, temporary)
-VALUES ($1, $2, $3, $4 ,$5, false)
-RETURNING *;
+VALUES ($1, $2, $3, $4, $5, false)
+RETURNING id, name, phone, email;
+
+
+-- name: GetUserBasicInfoById :one
+SELECT id, name, phone, email
+FROM users
+WHERE id = $1;
+
 
 -- name: CreateTemporaryUser :one
 INSERT INTO users (phone, temporary)

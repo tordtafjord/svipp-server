@@ -1,0 +1,135 @@
+### Set URL global variable
+GET https://svipp.app
+
+> {%
+    // Comment out depending on testing production or dev on localhost
+    //client.global.set("url", "https://svipp.app");
+    client.global.set("url", "http://localhost:8080");
+%}
+
+### MAKE SURE Driver TEST USER EXISTS
+POST {{url}}/api/driver
+Content-Type: application/json
+//Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Driver",
+  "phone": "{{$random.integer(11111111, 99999999)}}",
+  "email": "driver@mail.com",
+  "password": "Password321",
+  "device_token": null
+}
+
+
+### CREATE DRIVER TEST
+POST {{url}}/api/driver
+Content-Type: application/json
+//Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Driver",
+  "phone": "{{$random.integer(11111111, 99999999)}}",
+  "email": "{{$random.email}}",
+  "password": "Password321",
+  "device_token": null
+}
+
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+### Authenticate and retrieve token
+POST {{url}}/api/driver/auth
+Content-Type: application/json
+
+{
+  "email": "driver@mail.com",
+  "password": "Password321",
+  "device_token": null
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("auth_token", response.body.token);
+    });
+%}
+
+### Verify Token
+GET {{url}}/api/driver/verify-token
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+### Get Current drivers deliveries
+GET {{url}}/api/driver/deliveries/my
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Create Order
+POST {{url}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "pickup_address_id": 19135,
+  "delivery_address_id": 20842,
+  "pickup_address": "Dusviksvinger 10C, 4028 Stavanger",
+  "delivery_address": "Engøyklubben 30, 4077 Hundvåg"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        var orderId = response.body.id;
+        client.global.set("orderId", orderId);
+        console.log(orderId)
+    });
+%}
+
+### Confirm Order
+POST {{url}}/api/orders/confirm
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "order_id": {{orderId}},
+  "recipient_phone": "{{$random.integer(11111111, 99999999)}}"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        var orderId = response.body.id;
+        client.global.set("orderId", orderId);
+        console.log(orderId)
+    });
+%}
+
+
+### Accept delivery
+POST {{url}}/api/driver/deliveries/{{orderId}}/accept
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+

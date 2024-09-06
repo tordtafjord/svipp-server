@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"log/slog"
+	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -19,43 +15,22 @@ const (
 	defaultShutdownPeriod = 30 * time.Second
 )
 
-func (app *application) serveHTTP() error {
+func (s *server) serveHTTP() error {
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", app.config.httpPort),
-		Handler:      app.routes(),
-		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelWarn),
+		Addr:         fmt.Sprintf(":%d", s.config.HTTPPort),
+		Handler:      s.routes(),
 		IdleTimeout:  defaultIdleTimeout,
 		ReadTimeout:  defaultReadTimeout,
 		WriteTimeout: defaultWriteTimeout,
 	}
 
-	shutdownErrorChan := make(chan error)
-
-	go func() {
-		quitChan := make(chan os.Signal, 1)
-		signal.Notify(quitChan, syscall.SIGINT, syscall.SIGTERM)
-		<-quitChan
-
-		ctx, cancel := context.WithTimeout(context.Background(), defaultShutdownPeriod)
-		defer cancel()
-
-		shutdownErrorChan <- srv.Shutdown(ctx)
-	}()
-
-	app.logger.Info("starting server", slog.Group("server", "addr", srv.Addr))
-
-	err := srv.ListenAndServe()
-	if !errors.Is(err, http.ErrServerClosed) {
-		return err
+	log.Printf("Server is starting on %s", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to listen and serve: %v", err)
 	}
 
-	err = <-shutdownErrorChan
-	if err != nil {
-		return err
-	}
-
-	app.logger.Info("stopped server", slog.Group("server", "addr", srv.Addr))
-
-	app.wg.Wait()
-	return nil
+	// This line will only be reached if ListenAndServe returns without error (which is unlikely)
+	s.config.DB.DBPool.Close()
+	log.Println("Server exited")
+	return error(errors.New("Server exited"))
 }
