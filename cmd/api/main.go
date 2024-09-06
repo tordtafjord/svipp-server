@@ -6,7 +6,8 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
-
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
 	"svipp-server/internal/version"
@@ -66,6 +67,24 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	defer dbPool.Close()
+
+	if cfg.db.automigrate {
+		// Run Goose DB migrations
+		goose.SetBaseFS(nil)
+
+		if err = goose.SetDialect("postgres"); err != nil {
+			return err
+		}
+
+		db := stdlib.OpenDBFromPool(dbPool)
+		if err = goose.Up(db, "sql/schema"); err != nil {
+			return err
+		}
+		if err = db.Close(); err != nil {
+			return err
+		}
+	}
+
 
 	app := &application{
 		config: cfg,
