@@ -1,0 +1,115 @@
+-- name: CreateOrder :one
+INSERT INTO orders (
+    user_id,
+    sender_id,
+    recipient_id,
+    pickup_address,
+    delivery_address,
+    distance,
+    driving_minutes,
+    price
+)
+VALUES (
+           $1,
+           $2,
+           $3,
+           $4,
+           $5,
+           $6,
+           $7,
+           $8
+       )
+RETURNING *;
+
+-- name: CreateOrderFromTempOrder :one
+WITH temp_data AS (
+    SELECT
+        user_id,
+        pickup_address,
+        delivery_address,
+        distance,
+        driving_minutes,
+        price
+    FROM temp_order
+    WHERE temp_order.id = $1 AND temp_order.user_id = $2
+)
+INSERT INTO orders (
+    user_id,
+    sender_id,
+    recipient_id,
+    pickup_address,
+    delivery_address,
+    distance,
+    driving_minutes,
+    price
+)
+SELECT
+    user_id,
+    user_id,
+    $3,
+    pickup_address,
+    delivery_address,
+    distance,
+    driving_minutes,
+    price
+FROM temp_data
+RETURNING *;
+
+
+-- name: CreateTempOrder :one
+INSERT INTO temp_order (
+    user_id,
+    pickup_address,
+    delivery_address,
+    distance,
+    driving_minutes,
+    price
+)
+VALUES (
+           $1,
+           $2,
+           $3,
+           $4,
+           $5,
+           $6
+       )
+RETURNING *;
+
+-- name: GetOrderDriverIdByOrderId :many
+SELECT driver_id
+FROM orders
+WHERE id = $1;
+
+-- name: GetOrdersByUserId :many
+SELECT *
+FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC;
+
+-- name: GetOrdersByDriverId :many
+SELECT *
+FROM orders
+WHERE driver_id = $1
+ORDER BY created_at DESC;
+
+-- name: ConfirmOrderById :one
+UPDATE orders
+SET
+    status = 'CONFIRMED',
+    confirmed_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;
+
+-- name: SetDriverIdByOrderId :one
+UPDATE orders
+SET
+    driver_id = $1,  -- New driver_id to be set
+    status = 'ACCEPTED',
+    accepted_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $2      -- Order ID for which the driver_id needs to be updated
+  AND driver_id IS NULL  -- Only update if driver_id is not already set
+RETURNING *;
+
+

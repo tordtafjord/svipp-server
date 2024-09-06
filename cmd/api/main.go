@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 	"log/slog"
 	"os"
 	"runtime/debug"
-	"sync"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
+	"sync"
+
 	"svipp-server/internal/version"
 
 	"github.com/lmittmann/tint"
@@ -53,19 +56,14 @@ func run(logger *slog.Logger) error {
 	cfg.db.dsn = env.GetString("DB_DSN", "postgres://svipp@localhost:5432/svipp?sslmode=disable")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)
 	cfg.jwt.secretKey = env.GetString("JWT_SECRET_KEY", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q=")
-	
 
 	fmt.Printf("version: %s\n", version.Get())
 
 	dbPool, err := pgxpool.New(context.Background(), cfg.db.dsn)
 	if err != nil {
-		return nil, err
-	}
-
-	db, err := database.New(dbPool)
-	if err != nil {
 		return err
 	}
+
 	defer dbPool.Close()
 
 	if cfg.db.automigrate {
@@ -77,7 +75,7 @@ func run(logger *slog.Logger) error {
 		}
 
 		db := stdlib.OpenDBFromPool(dbPool)
-		if err = goose.Up(db, "sql/schema"); err != nil {
+		if err = goose.Up(db, "sql/migrations"); err != nil {
 			return err
 		}
 		if err = db.Close(); err != nil {
@@ -85,10 +83,9 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
-
 	app := &application{
 		config: cfg,
-		db:     db,
+		db:     database.New(dbPool),
 		logger: logger,
 	}
 
