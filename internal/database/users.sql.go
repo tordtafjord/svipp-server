@@ -19,23 +19,10 @@ func (q *Queries) CreateDriver(ctx context.Context, id int32) error {
 	return err
 }
 
-const createTemporaryUser = `-- name: CreateTemporaryUser :one
-INSERT INTO users (phone, temporary)
-VALUES ($1, true)
-RETURNING id
-`
-
-func (q *Queries) CreateTemporaryUser(ctx context.Context, phone string) (int32, error) {
-	row := q.db.QueryRow(ctx, createTemporaryUser, phone)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, phone, email, password, device_token, temporary)
-VALUES ($1, $2, $3, $4, $5, false)
-RETURNING id, name, phone, email
+INSERT INTO users (name, phone, email, password, device_token, temporary, role)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, name, phone, email, role
 `
 
 type CreateUserParams struct {
@@ -43,7 +30,9 @@ type CreateUserParams struct {
 	Phone       string  `json:"phone"`
 	Email       *string `json:"email"`
 	Password    *string `json:"password"`
-	DeviceToken *string `json:"device_token"`
+	DeviceToken *string `json:"deviceToken"`
+	Temporary   *bool   `json:"temporary"`
+	Role        string  `json:"role"`
 }
 
 type CreateUserRow struct {
@@ -51,6 +40,7 @@ type CreateUserRow struct {
 	Name  *string `json:"name"`
 	Phone string  `json:"phone"`
 	Email *string `json:"email"`
+	Role  string  `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -60,6 +50,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.Email,
 		arg.Password,
 		arg.DeviceToken,
+		arg.Temporary,
+		arg.Role,
 	)
 	var i CreateUserRow
 	err := row.Scan(
@@ -67,6 +59,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.Name,
 		&i.Phone,
 		&i.Email,
+		&i.Role,
 	)
 	return i, err
 }
@@ -103,31 +96,45 @@ func (q *Queries) GetDriverById(ctx context.Context, id int32) (Driver, error) {
 }
 
 const getOrCreateTempUser = `-- name: GetOrCreateTempUser :one
-WITH existing_user AS (
-    SELECT id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at FROM users WHERE phone = $1
-)
-INSERT INTO users (phone, temporary)
-SELECT $1, true
-WHERE NOT EXISTS (SELECT 1 FROM existing_user)
-RETURNING id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at
+INSERT INTO users (phone, name, email, temporary)
+VALUES ($1, $2, $3, true)
+ON CONFLICT (phone) DO UPDATE
+SET name = CASE 
+        WHEN users.temporary THEN $2
+        ELSE users.name
+    END,
+    email = CASE 
+        WHEN users.temporary THEN $3
+        ELSE users.email
+    END
+RETURNING id, name, phone, email, role, device_token
 `
 
-func (q *Queries) GetOrCreateTempUser(ctx context.Context, phone string) (User, error) {
-	row := q.db.QueryRow(ctx, getOrCreateTempUser, phone)
-	var i User
+type GetOrCreateTempUserParams struct {
+	Phone string  `json:"phone"`
+	Name  *string `json:"name"`
+	Email *string `json:"email"`
+}
+
+type GetOrCreateTempUserRow struct {
+	ID          int32   `json:"id"`
+	Name        *string `json:"name"`
+	Phone       string  `json:"phone"`
+	Email       *string `json:"email"`
+	Role        string  `json:"role"`
+	DeviceToken *string `json:"deviceToken"`
+}
+
+func (q *Queries) GetOrCreateTempUser(ctx context.Context, arg GetOrCreateTempUserParams) (GetOrCreateTempUserRow, error) {
+	row := q.db.QueryRow(ctx, getOrCreateTempUser, arg.Phone, arg.Name, arg.Email)
+	var i GetOrCreateTempUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Phone,
 		&i.Email,
-		&i.Password,
+		&i.Role,
 		&i.DeviceToken,
-		&i.Temporary,
-		&i.RateTotal,
-		&i.Rates,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -158,7 +165,7 @@ func (q *Queries) GetUserBasicInfoById(ctx context.Context, id int32) (GetUserBa
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at
+SELECT id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at, role
 FROM users WHERE email = $1 AND email IS NOT NULL
 `
 
@@ -178,6 +185,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Role,
 	)
 	return i, err
 }
@@ -203,7 +211,7 @@ WHERE id = $1
 
 type UpdateDeviceTokenByUserIDParams struct {
 	ID          int32   `json:"id"`
-	DeviceToken *string `json:"device_token"`
+	DeviceToken *string `json:"deviceToken"`
 }
 
 func (q *Queries) UpdateDeviceTokenByUserID(ctx context.Context, arg UpdateDeviceTokenByUserIDParams) error {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"svipp-server/cmd/api/handlers"
+	"svipp-server/internal/handlers"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -56,6 +56,32 @@ func setupApiRoutes(router *chi.Mux, h *handlers.Handler, jwtMiddleWare *JWTAuth
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
+	})
+}
+
+func setupDriverRoutes(driverRouter *chi.Mux, h *handlers.Handler, jwtMiddleWare *JWTAuthMiddleware, isProd bool) {
+	// /api/driver/....
+
+	// Conditionally add the /users endpoint
+	driverRouter.Group(func(r chi.Router) {
+		if isProd {
+			r.Use(jwtMiddleWare.JwtAuthMiddleware)
+			r.Use(RequireRole("admin"))
+		}
+		driverRouter.Post("/", h.CreateDriver)
+	})
+
+	// Group that requires JWT Authentication
+	driverRouter.Group(func(r chi.Router) {
+		r.Use(jwtMiddleWare.JwtAuthMiddleware)
+		r.Use(RequireRole("driver", "admin")) // Ensures the user has the driver or admin role
+		// Define other driver-specific secured routes here
+		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		//r.Get("/deliveries/my", h.GetMyDeliveries)
+		//r.Post("/deliveries/{orderID}/accept", h.AcceptDelivery)
+
 	})
 }
 

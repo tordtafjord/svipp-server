@@ -13,7 +13,7 @@ import (
 type LoginRequest struct {
 	Email       string  `json:"email" validate:"required,email"`
 	Password    string  `json:"password" validate:"required,min=8,max=50"`
-	DeviceToken *string `json:"device_token" validate:"omitempty"`
+	DeviceToken *string `json:"deviceToken" validate:"omitempty"`
 }
 
 func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request) {
@@ -43,13 +43,13 @@ func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	token, err := h.jwtService.GenerateJWT(user.ID, "user")
+	token, err := h.jwtService.GenerateJWT(user.ID, user.Role)
 	if err != nil {
 		httputil.InternalServerErrorResponse(writer, "Error generating token", err)
 		return
 	}
 
-	httputil.JSONResponse(writer, 200, token)
+	httputil.JSONResponse(writer, 200, map[string]string{"token": token})
 }
 
 func getReadableValidationErrors(err error) []string {

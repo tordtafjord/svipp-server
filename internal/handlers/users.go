@@ -6,6 +6,7 @@ import (
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
+	"svipp-server/internal/models"
 )
 
 type createUserRequest struct {
@@ -13,7 +14,7 @@ type createUserRequest struct {
 	Phone       string  `json:"phone" validate:"required,e164"`
 	Email       string  `json:"email" validate:"required,email"`
 	Password    string  `json:"password" validate:"required,min=8,max=50"`
-	DeviceToken *string `json:"device_token" validate:"omitempty"`
+	DeviceToken *string `json:"deviceToken" validate:"omitempty"`
 }
 
 func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) {
@@ -36,6 +37,8 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		Email:       &params.Email,
 		Password:    &params.Password,
 		DeviceToken: params.DeviceToken,
+		Temporary:   new(bool), // Use new(bool) to create a pointer to false
+		Role:        models.RoleUser.String(),
 	})
 	if err != nil {
 		httputil.ErrorResponse(writer, http.StatusConflict, err.Error(), "User with email or phone already exists")

@@ -70,13 +70,13 @@ RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, deliv
 `
 
 type CreateOrderParams struct {
-	UserID          int32   `json:"user_id"`
-	SenderID        int32   `json:"sender_id"`
-	RecipientID     int32   `json:"recipient_id"`
-	PickupAddress   string  `json:"pickup_address"`
-	DeliveryAddress string  `json:"delivery_address"`
+	UserID          int32   `json:"userId"`
+	SenderID        int32   `json:"senderId"`
+	RecipientID     int32   `json:"recipientId"`
+	PickupAddress   string  `json:"pickupAddress"`
+	DeliveryAddress string  `json:"deliveryAddress"`
 	Distance        int32   `json:"distance"`
-	DrivingMinutes  float64 `json:"driving_minutes"`
+	DrivingMinutes  float64 `json:"drivingMinutes"`
 	Price           float64 `json:"price"`
 }
 
@@ -152,8 +152,8 @@ RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, deliv
 
 type CreateOrderFromTempOrderParams struct {
 	ID          int32 `json:"id"`
-	UserID      int32 `json:"user_id"`
-	RecipientID int32 `json:"recipient_id"`
+	UserID      int32 `json:"userId"`
+	RecipientID int32 `json:"recipientId"`
 }
 
 func (q *Queries) CreateOrderFromTempOrder(ctx context.Context, arg CreateOrderFromTempOrderParams) (Order, error) {
@@ -203,11 +203,11 @@ RETURNING id, user_id, pickup_address, delivery_address, distance, driving_minut
 `
 
 type CreateTempOrderParams struct {
-	UserID          int32    `json:"user_id"`
-	PickupAddress   string   `json:"pickup_address"`
-	DeliveryAddress string   `json:"delivery_address"`
+	UserID          int32    `json:"userId"`
+	PickupAddress   string   `json:"pickupAddress"`
+	DeliveryAddress string   `json:"deliveryAddress"`
 	Distance        *int32   `json:"distance"`
-	DrivingMinutes  *float64 `json:"driving_minutes"`
+	DrivingMinutes  *float64 `json:"drivingMinutes"`
 	Price           *float64 `json:"price"`
 }
 
@@ -365,7 +365,7 @@ RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, deliv
 `
 
 type SetDriverIdByOrderIdParams struct {
-	DriverID *int32 `json:"driver_id"`
+	DriverID *int32 `json:"driverId"`
 	ID       int32  `json:"id"`
 }
 

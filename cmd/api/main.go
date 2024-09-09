@@ -31,9 +31,9 @@ func run() error {
 		return err
 	}
 
-	app := &server{
+	srv := &server{
 		config: cfg,
 	}
 
-	return app.serveHTTP()
+	return srv.serveHTTP()
 }
