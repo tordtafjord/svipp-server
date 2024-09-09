@@ -21,20 +21,6 @@ $ go mod tidy
 $ go run ./cmd/api
 ```
 
-If you make a request to the `GET /status` endpoint using `curl` you should get a response like this:
-
-```
-$ curl -i localhost:4444/status
-HTTP/1.1 200 OK
-Content-Type: application/json
-Date: Mon, 09 May 2022 20:46:37 GMT
-Content-Length: 23
-
-{
-    "Status": "OK",
-}
-```
-
 ## Project structure
 
 Everything in the codebase is designed to be editable. Feel free to change and adapt it to meet your needs.
