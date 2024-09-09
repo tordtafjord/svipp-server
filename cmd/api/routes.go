@@ -29,7 +29,7 @@ func setupShopifyRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, i
 	r := chi.NewRouter()
 
 	// Public routes (no authentication required)
-	//r.Get("/callback", h.ShopifyCallback)
+	r.Post("/callback", h.ShopifyCallback)
 	//r.Post("/webhook", h.ShopifyWebhook)
 
 	// Add any authenticated routes here if needed
