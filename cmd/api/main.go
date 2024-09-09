@@ -24,7 +24,7 @@ func main() {
 
 func run() error {
 
-	fmt.Printf("version: %s\n", version.Get())
+	fmt.Printf("\nRunning svipp-server version: %s\n", version.Get())
 
 	cfg, err := config.New()
 	if err != nil {

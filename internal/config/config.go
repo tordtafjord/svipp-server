@@ -2,14 +2,14 @@ package config
 
 import (
 	"context"
-	"svipp-server/internal/database"
-	"svipp-server/internal/env"
-
 	firebase "firebase.google.com/go"
+	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"google.golang.org/api/option"
+	"svipp-server/internal/database"
+	"svipp-server/internal/env"
 )
 
 type Config struct {
@@ -74,6 +74,8 @@ func New() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Svipp server running in production: %t\n\n", cfg.IsProd)
 
 	cfg.BaseURL = env.GetString("BASE_URL", "http://localhost:8080")
 	cfg.HTTPPort = env.GetInt("PORT", 8080)

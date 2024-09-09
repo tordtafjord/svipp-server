@@ -26,10 +26,10 @@ func (h *Handler) ShopifyCallback(w http.ResponseWriter, r *http.Request) {
 	// Create a new ShopifyRateResponse
 	response := &ShopifyRateResponse{
 		ServiceName:   "Ekspress Levering",
-		Description:   "Hentes snartest mulig av vår leveringsbud",
+		Description:   "Hentes snartest mulig av vårt leveringsbud",
 		ServiceCode:   "express",
 		Currency:      "NOK",
-		TotalPrice:    15000, // Example price in cents
+		TotalPrice:    15000,
 		PhoneRequired: true,
 
 		MinDeliveryDate: &currentTimeString,

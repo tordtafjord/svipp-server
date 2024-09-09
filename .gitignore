@@ -132,3 +132,4 @@ fabric.properties
 /.idea/svipp-server.iml
 /.idea/vcs.xml
 /.vscode/launch.json
+/.vscode/
