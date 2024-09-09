@@ -54,16 +54,6 @@ Everything in the codebase is designed to be editable. Feel free to change and a
 | `↳ internal/validator/` | Contains validation helpers. |
 | `↳ internal/version/` | Contains the application version number definition. |
 
-## Configuration settings
-
-Configuration settings are managed via environment variables, with the environment variables read into your application in the `run()` function in the `main.go` file.
-
-You can try this out by setting a `HTTP_PORT` environment variable to configure the network port that the server is listening on:
-
-```
-$ export HTTP_PORT="9999"
-$ go run ./cmd/api
-```
 
 Feel free to adapt the `run()` function to parse additional environment variables and store their values in the `config` struct. The application uses helper functions in the `internal/env` package to parse environment variable values or return a default value if no matching environment variable is set. It includes `env.GetString()`, `env.GetInt()` and `env.GetBool()` functions for reading string, integer and bool values from environment variables. Again, you can add any additional helper functions that you need.
 
