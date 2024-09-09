@@ -126,3 +126,9 @@ fabric.properties
 /.idea/dataSources.xml
 /server
 /.idea/sqldialects.xml
+/tmp/build-errors.log
+/tmp/main
+/.idea/modules.xml
+/.idea/svipp-server.iml
+/.idea/vcs.xml
+/.vscode/launch.json

@@ -11,44 +11,49 @@ import (
 )
 
 func (s *server) routes() http.Handler {
+	mux := chi.NewRouter()
 	h := handlers.NewHandler(s.config)
 	jwtMiddleware := NewJWTAuthMiddleware(s.config.JWT.SecretKey)
 
-	mux := chi.NewRouter()
 	setupBaseMiddlewares(mux)
-
 	setupStaticServing(mux)
 
-	// apiRouter
-	apiRouter := chi.NewRouter()
-	setupApiRoutes(apiRouter, h, jwtMiddleware, s.config.IsProd)
-
-	// Driver-specific router
-	driverRouter := chi.NewRouter()
-	//setupDriverRoutes(driverRouter, handler)
-
-	// Mounting routers
-	mux.Mount("/api", apiRouter)
-	mux.Mount("/api/driver", driverRouter)
+	mux.Mount("/api", setupApiRoutes(h, jwtMiddleware, s.config.IsProd))
+	mux.Mount("/api/driver", setupDriverRoutes(h, jwtMiddleware, s.config.IsProd))
+	mux.Mount("/api/shopify", setupShopifyRoutes(h, jwtMiddleware, s.config.IsProd))
 
 	return mux
 }
 
-func setupApiRoutes(router *chi.Mux, h *handlers.Handler, jwtMiddleWare *JWTAuthMiddleware, isProd bool) {
-	router.Post("/auth", h.Authenticate)
+func setupShopifyRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+	r := chi.NewRouter()
 
-	// Conditionally add the /users endpoint
-	router.Group(func(r chi.Router) {
+	// Public routes (no authentication required)
+	//r.Get("/callback", h.ShopifyCallback)
+	//r.Post("/webhook", h.ShopifyWebhook)
+
+	// Add any authenticated routes here if needed
+	// r.Group(func(r chi.Router) {
+	//     r.Use(jwtMiddleware.JwtAuthMiddleware)
+	//     // Add authenticated Shopify routes here
+	// })
+
+	return r
+}
+
+func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+	r := chi.NewRouter()
+	r.Post("/auth", h.Authenticate)
+
+	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleWare.JwtAuthMiddleware)
-			r.Use(RequireRole("admin"))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("admin"))
 		}
-		router.Post("/users", h.CreateUser)
+		r.Post("/users", h.CreateUser)
 	})
 
-	// Authenticated Group
-	router.Group(func(r chi.Router) {
-		r.Use(jwtMiddleWare.JwtAuthMiddleware)
+	r.Group(func(r chi.Router) {
+		r.Use(jwtMiddleware.JwtAuthMiddleware)
 		r.Get("/users/me", h.GetMyAccount)
 		r.Post("/orders", h.NewOrder)
 		r.Get("/orders/my", h.GetMyOrders)
@@ -57,32 +62,35 @@ func setupApiRoutes(router *chi.Mux, h *handlers.Handler, jwtMiddleWare *JWTAuth
 			w.WriteHeader(http.StatusOK)
 		})
 	})
+
+	return r
 }
 
-func setupDriverRoutes(driverRouter *chi.Mux, h *handlers.Handler, jwtMiddleWare *JWTAuthMiddleware, isProd bool) {
-	// /api/driver/....
+func setupDriverRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+	r := chi.NewRouter()
 
-	// Conditionally add the /users endpoint
-	driverRouter.Group(func(r chi.Router) {
+	// Admin-only routes
+	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleWare.JwtAuthMiddleware)
-			r.Use(RequireRole("admin"))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("admin"))
 		}
-		driverRouter.Post("/", h.CreateDriver)
+		r.Post("/", h.CreateDriver)
 	})
 
-	// Group that requires JWT Authentication
-	driverRouter.Group(func(r chi.Router) {
-		r.Use(jwtMiddleWare.JwtAuthMiddleware)
-		r.Use(RequireRole("driver", "admin")) // Ensures the user has the driver or admin role
-		// Define other driver-specific secured routes here
+	// Driver and admin routes
+	r.Group(func(r chi.Router) {
+		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("driver", "admin"))
+
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		//r.Get("/deliveries/my", h.GetMyDeliveries)
-		//r.Post("/deliveries/{orderID}/accept", h.AcceptDelivery)
 
+		// Uncomment and implement these routes when ready
+		// r.Get("/deliveries/my", h.GetMyDeliveries)
+		// r.Post("/deliveries/{orderID}/accept", h.AcceptDelivery)
 	})
+
+	return r
 }
 
 func setupBaseMiddlewares(router *chi.Mux) {
