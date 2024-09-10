@@ -47,6 +47,12 @@ type Rating struct {
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 }
 
+type ShopifyRequest struct {
+	ID        int32              `json:"id"`
+	RawJson   []byte             `json:"rawJson"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+}
+
 type TempOrder struct {
 	ID              int32              `json:"id"`
 	UserID          int32              `json:"userId"`
