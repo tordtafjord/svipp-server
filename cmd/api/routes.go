@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"svipp-server/internal/handlers"
 	"time"
@@ -17,6 +18,15 @@ func (s *server) routes() http.Handler {
 
 	setupBaseMiddlewares(mux)
 	setupStaticServing(mux)
+	mux.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		err := s.config.DB.DBPool.Ping(r.Context())
+		if err != nil {
+			log.Printf("Database health check failed: %v", err)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 
 	mux.Mount("/api", setupApiRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api/driver", setupDriverRoutes(h, jwtMiddleware, s.config.IsProd))
@@ -94,10 +104,10 @@ func setupDriverRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, is
 }
 
 func setupBaseMiddlewares(router *chi.Mux) {
+	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
-	router.Use(httprate.LimitByIP(100, 1*time.Minute))
-	router.Use(middleware.Heartbeat("/health"))
 	router.Use(middleware.Recoverer)
+	router.Use(httprate.LimitByRealIP(100, 1*time.Minute))
 }
 
 func setupStaticServing(router *chi.Mux) {
