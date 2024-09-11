@@ -1,6 +1,6 @@
 {
   "healthchecks": {
-    "svipp": [
+    "svipp-server": [
       {
         "initialDelay": 3,
         "type": "startup",
