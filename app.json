@@ -2,7 +2,7 @@
   "healthchecks": {
     "web": [
       {
-        "initialDelay": 2,
+        "initialDelay": 3,
         "type": "startup",
         "name": "web check",
         "description": "Checking if the app responds to the /health endpoint",
