@@ -111,6 +111,10 @@ func setupBaseMiddlewares(router *chi.Mux) {
 }
 
 func setupStaticServing(router *chi.Mux) {
+	// Serve favicon.ico
+	router.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./assets/static/favicon.ico")
+	})
 	// Set up static file serving
 	//fileServer := http.FileServer(http.Dir("./static"))
 	//router.Handle("/static/*", http.StripPrefix("/static/", fileServer))
