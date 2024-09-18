@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	defaultIdleTimeout    = time.Minute
-	defaultReadTimeout    = 5 * time.Second
-	defaultWriteTimeout   = 10 * time.Second
+	defaultIdleTimeout    = 2 * time.Minute
+	defaultReadTimeout    = 10 * time.Second
+	defaultWriteTimeout   = 30 * time.Second
 	defaultShutdownPeriod = 30 * time.Second
 )
 
