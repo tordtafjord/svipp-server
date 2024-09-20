@@ -17,6 +17,8 @@ go run ./cmd/api
 ```
 
 ## HOT RELOAD RUN
+Automatically runs tailwind css generation as well.
+Runs db generation on exit, so restart required after sql queries are created
 ```
 air
 ```
@@ -33,6 +35,9 @@ goose -dir "sql/schema" postgres "postgres://transport:password@localhost:8181/t
 
 ## Tailwind CSS Generation
 ```
+# Probably need to run first time:
+npm install
+# But normally only:
 npm run build-css
 ```
 
