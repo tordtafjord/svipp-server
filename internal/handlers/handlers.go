@@ -43,7 +43,7 @@ func parseTemplates() (*template.Template, error) {
 		return nil, fmt.Errorf("failed to create sub-filesystem: %w", err)
 	}
 
-	tmpl, err := template.ParseFS(subFS, "*.tmpl")
+	tmpl, err := template.ParseFS(subFS, "*.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}

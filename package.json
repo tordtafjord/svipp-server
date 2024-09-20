@@ -1,0 +1,10 @@
+{
+  "name": "svipp-server",
+  "version": "1.0.0",
+  "scripts": {
+    "build-css": "tailwindcss -i ./assets/input.css -o ./assets/static/output.css"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.12"
+  }
+}

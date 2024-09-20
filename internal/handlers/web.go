@@ -13,8 +13,8 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		Title: "Svipp – Levering på dine premisser",
 	}
 
-	err := h.templates.ExecuteTemplate(w, "layout.tmpl", data)
+	err := h.templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to execute layout.tmpl", err)
+		httputil.InternalServerErrorResponse(w, "Failed to execute layout.html", err)
 	}
 }
