@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"html/template"
+	"io/fs"
+	"svipp-server/assets"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/config"
 	"svipp-server/internal/database"
@@ -11,19 +14,41 @@ import (
 type Handler struct {
 	db         *database.Queries
 	jwtService *auth.JWTService
+	templates  *template.Template
 }
 
 var validate *validator.Validate
 
 func NewHandler(cfg *config.Config) *Handler {
+	templates, err := parseTemplates()
+	if err != nil {
+		// Handle error (e.g., log it or panic)
+		panic(err)
+	}
+
 	return &Handler{
 		db:         cfg.DB.DBQ,
 		jwtService: auth.NewJWTService(cfg),
+		templates:  templates,
 	}
 }
 
 func init() {
 	validate = validator.New(validator.WithRequiredStructEnabled())
+}
+
+func parseTemplates() (*template.Template, error) {
+	subFS, err := fs.Sub(assets.EmbeddedFiles, "templates")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create sub-filesystem: %w", err)
+	}
+
+	tmpl, err := template.ParseFS(subFS, "*.tmpl")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
+	}
+
+	return tmpl, nil
 }
 
 func validateStruct(s interface{}) []string {

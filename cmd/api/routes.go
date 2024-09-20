@@ -1,14 +1,15 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"svipp-server/internal/handlers"
-	"time"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	"io/fs"
+	"log"
+	"net/http"
+	"svipp-server/assets"
+	"svipp-server/internal/handlers"
+	"time"
 )
 
 func (s *server) routes() http.Handler {
@@ -28,11 +29,19 @@ func (s *server) routes() http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	mux.Mount("/", setupWebRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api", setupApiRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api/driver", setupDriverRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api/shopify", setupShopifyRoutes(h, jwtMiddleware, s.config.IsProd))
 
 	return mux
+}
+
+func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod bool) http.Handler {
+	r := chi.NewRouter()
+	r.Get("/", h.HomeHandler)
+
+	return r
 }
 
 func setupShopifyRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
@@ -111,21 +120,12 @@ func setupBaseMiddlewares(router *chi.Mux) {
 }
 
 func setupStaticServing(router *chi.Mux) {
-	// Serve favicon.ico
-	router.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./assets/static/favicon.ico")
-	})
 	// Set up static file serving
-	//fileServer := http.FileServer(http.Dir("./static"))
-	//router.Handle("/static/*", http.StripPrefix("/static/", fileServer))
-
-	// Serve images publicly
-	//imageServer := http.FileServer(http.Dir("./assets/static/images"))
-	//router.Handle("/images/*", http.StripPrefix("/images/", imageServer))
-
-	// Serve index.html for the root path
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./assets/static/index.html")
-	})
+	staticSubFS, err := fs.Sub(assets.EmbeddedFiles, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fileServer := http.FileServer(http.FS(staticSubFS))
+	router.Handle("/static/*", http.StripPrefix("/static/", fileServer))
 
 }

@@ -1,0 +1,19 @@
+:root {
+    --wp--preset--color--base: #e4efeb;
+    --wp--preset--color--contrast: #000000;
+
+}
+
+body {
+    font-family: "Jost", sans-serif;
+    background-color: var(--wp--preset--color--base);
+    color: var(--wp--preset--color--contrast);
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3 {
+    font-family: "Instrument Sans", sans-serif;
+    font-weight: 600;
+    font-size: 15vh;
+}
