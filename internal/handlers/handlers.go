@@ -42,11 +42,7 @@ func parseTemplates() (*template.Template, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sub-filesystem: %w", err)
 	}
-
-	tmpl, err := template.ParseFS(subFS, "*.html")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
+	tmpl := template.Must(template.ParseFS(subFS, "*.gohtml"))
 
 	return tmpl, nil
 }

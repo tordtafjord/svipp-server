@@ -39,7 +39,8 @@ func (s *server) routes() http.Handler {
 
 func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod bool) http.Handler {
 	r := chi.NewRouter()
-	r.Get("/", h.HomeHandler)
+	r.Get("/", h.HomePage)
+	r.Get("/login", h.LoginPage)
 
 	return r
 }

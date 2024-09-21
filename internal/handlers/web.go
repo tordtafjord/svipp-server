@@ -5,16 +5,16 @@ import (
 	"svipp-server/internal/httputil"
 )
 
-func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Title string
-		// Add other fields as needed
-	}{
-		Title: "Svipp – Levering på dine premisser",
-	}
-
-	err := h.templates.ExecuteTemplate(w, "layout.html", data)
+func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
+	err := h.templates.ExecuteTemplate(w, "home.gohtml", nil)
 	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to execute layout.html", err)
+		httputil.InternalServerErrorResponse(w, "Failed to execute home.html", err)
+	}
+}
+
+func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
+	err := h.templates.ExecuteTemplate(w, "login.gohtml", nil)
+	if err != nil {
+		httputil.InternalServerErrorResponse(w, "Failed to execute login.html", err)
 	}
 }

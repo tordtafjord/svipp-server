@@ -3,16 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
+    <title>{{if .}}{{.}}{{else}}Svipp - Levering på dine premisser{{end}}</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <script src="https://unpkg.com/htmx.org@2.0.2"></script>
     <link rel="stylesheet" href="/static/output.css">
 </head>
 <body>
-
-    <main>
-        {{template "home" .}}
-    </main>
-
-</body>
-</html>
