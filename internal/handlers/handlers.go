@@ -43,7 +43,7 @@ func validateStruct(s interface{}) []string {
 		case "required":
 			errorMessages = append(errorMessages, fmt.Sprintf("%s er et krav", err.Field()))
 		case "email":
-			errorMessages = append(errorMessages, fmt.Sprintf("%s er ikke en gyldig email addresse", err.Field()))
+			errorMessages = append(errorMessages, fmt.Sprintf("'%s' er ikke en gyldig email", err.Value()))
 		case "min":
 			errorMessages = append(errorMessages, fmt.Sprintf("%s må være minst %s tegn langt", err.Field(), err.Param()))
 		default:
