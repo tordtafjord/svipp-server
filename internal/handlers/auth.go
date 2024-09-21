@@ -6,67 +6,71 @@ import (
 	"net/http"
 	"svipp-server/internal/httputil"
 	"svipp-server/internal/password"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type LoginRequest struct {
 	Email       string  `json:"email" validate:"required,email"`
-	Password    string  `json:"password" validate:"required,min=8,max=50"`
+	Password    string  `json:"password" validate:"required"`
 	DeviceToken *string `json:"deviceToken" validate:"omitempty"`
 }
 
 func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request) {
 	var params LoginRequest
+	isHtmx := request.Header.Get("HX-Request") == "true"
 
-	// Parse the JSON request body
-	if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
-		httputil.BadRequestResponse(writer, err)
-		return
+	// Parse the request body
+	if !isHtmx {
+		if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
+			httputil.BadRequestResponse(writer, err, false)
+			return
+		}
+	} else {
+		if err := request.ParseForm(); err != nil {
+			httputil.BadRequestResponse(writer, err, true)
+			return
+		}
+		params.Email = request.FormValue("email")
+		params.Password = request.FormValue("password")
 	}
 
 	// Validate the request
 	if validationErrors := validateStruct(params); validationErrors != nil {
-		httputil.UnvalidResponse(writer, validationErrors)
+		httputil.ValidationFailedResponse(writer, validationErrors, isHtmx)
 		return
 	}
 
 	user, err := h.db.GetUserByEmail(request.Context(), &params.Email)
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusUnauthorized, fmt.Sprintf("Authentication failed %v", err), "Authentication Failed")
+		httputil.ErrorResponse(writer, http.StatusUnauthorized, fmt.Sprintf("Authentication failed %v", err), "Authentication Failed", isHtmx)
 		return
 	}
 
 	err = password.CompareWithHash(params.Password, *user.Password)
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusUnauthorized, fmt.Sprintf("Authentication failed %v", err), "Authentication Failed")
+		httputil.ErrorResponse(writer, http.StatusUnauthorized, fmt.Sprintf("Authentication failed %v", err), "Authentication Failed", isHtmx)
 		return
 	}
 
 	token, err := h.jwtService.GenerateJWT(user.ID, user.Role)
 	if err != nil {
-		httputil.InternalServerErrorResponse(writer, "Error generating token", err)
+		httputil.InternalServerErrorResponse(writer, "Error generating token", err, isHtmx)
 		return
 	}
 
-	httputil.JSONResponse(writer, 200, map[string]string{"token": token})
-}
-
-func getReadableValidationErrors(err error) []string {
-	var errorMessages []string
-
-	for _, err := range err.(validator.ValidationErrors) {
-		switch err.Tag() {
-		case "required":
-			errorMessages = append(errorMessages, fmt.Sprintf("%s is required", err.Field()))
-		case "email":
-			errorMessages = append(errorMessages, fmt.Sprintf("%s must be a valid email address", err.Field()))
-		case "min":
-			errorMessages = append(errorMessages, fmt.Sprintf("%s must be at least %s characters long", err.Field(), err.Param()))
-		default:
-			errorMessages = append(errorMessages, fmt.Sprintf("%s failed on the %s tag", err.Field(), err.Tag()))
-		}
+	if !isHtmx {
+		httputil.JSONResponse(writer, 200, map[string]string{"token": token})
+		return
 	}
-
-	return errorMessages
+	const expiration = 24 * 3600
+	cookie := http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true, // Set to true if using HTTPS
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   expiration, // Set the expiration time in seconds (e.g., 1 hour)
+	}
+	http.SetCookie(writer, &cookie)
+	writer.Header().Set("HX-Redirect", "/")
 }

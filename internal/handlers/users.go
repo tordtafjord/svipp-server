@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
@@ -22,12 +23,12 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 
 	// Parse the JSON request body
 	if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
-		httputil.BadRequestResponse(writer, err)
+		httputil.BadRequestResponse(writer, err, false)
 		return
 	}
 
 	if validationErrors := validateStruct(params); validationErrors != nil {
-		httputil.UnvalidResponse(writer, validationErrors)
+		httputil.ValidationFailedResponse(writer, validationErrors, false)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		Role:        models.RoleUser.String(),
 	})
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusConflict, err.Error(), "User with email or phone already exists")
+		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Mislyktes i å lage en ny bruke, har du en konto fra før av?", false)
 		return
 	}
 
@@ -51,12 +52,12 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 func (h *Handler) GetMyAccount(writer http.ResponseWriter, request *http.Request) {
 	userId, err := auth.GetUserIdFromContext(request.Context())
 	if err != nil {
-		httputil.InternalServerErrorResponse(writer, "Failed to get user id from context", err)
+		httputil.InternalServerErrorResponse(writer, "Failed to get user id from context", err, false)
 		return
 	}
 	user, err := h.db.GetUserBasicInfoById(request.Context(), userId)
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusInternalServerError, err.Error(), "Failed to get user")
+		httputil.InternalServerErrorResponse(writer, "Failed to get user", err, false)
 		return
 	}
 	httputil.JSONResponse(writer, http.StatusOK, user)

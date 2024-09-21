@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
@@ -15,12 +14,12 @@ func (h *Handler) CreateDriver(writer http.ResponseWriter, request *http.Request
 
 	// Parse the JSON request body
 	if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
-		httputil.BadRequestResponse(writer, err)
+		httputil.BadRequestResponse(writer, err, false)
 		return
 	}
 
 	if validationErrors := validateStruct(params); validationErrors != nil {
-		httputil.UnvalidResponse(writer, validationErrors)
+		httputil.ValidationFailedResponse(writer, validationErrors, false)
 		return
 	}
 
@@ -34,13 +33,13 @@ func (h *Handler) CreateDriver(writer http.ResponseWriter, request *http.Request
 		Temporary:   new(bool),
 	})
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusConflict, err.Error(), "User with email or phone already exists")
+		httputil.ErrorResponse(writer, http.StatusConflict, "User with email or phone already exists", "Mislyktes i å opprette en konto, har du en konto fra før av?", false)
 		return
 	}
 
 	err = h.db.CreateDriver(request.Context(), user.ID)
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusInternalServerError, fmt.Sprintf("Error creating driver %v", err), "Internal Server Error")
+		httputil.InternalServerErrorResponse(writer, "Error creating driver:", err, false)
 	}
 
 	httputil.JSONResponse(writer, http.StatusCreated, user)

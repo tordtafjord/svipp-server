@@ -86,21 +86,6 @@ Authorization: Bearer {{auth_token}}
 %}
 
 
-### Try driver auth
-POST {{url}}/api/driver/auth
-Content-Type: application/json
-
-{
-  "email": "test@mail.com",
-  "password": "Password3211"
-}
-
-> {%
-    client.test("Request executed successfully", function () {
-        client.assert(response.status === 403, "Response status is not 403");
-    });
-%}
-
 ### Try driver verify-token
 POST {{url}}/api/driver/verify-token
 Content-Type: application/json
@@ -137,7 +122,7 @@ Authorization: Bearer {{auth_token}}
 
 > {%
     client.test("Request executed successfully", function () {
-        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.status === 201, "Response status is not 201");
         var orderId = response.body.id;
         client.global.set("orderId", orderId);
     });

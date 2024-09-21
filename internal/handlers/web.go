@@ -6,15 +6,9 @@ import (
 )
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	err := h.templates.ExecuteTemplate(w, "home.gohtml", nil)
-	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to execute home.html", err)
-	}
+	httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", nil)
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
-	err := h.templates.ExecuteTemplate(w, "login.gohtml", nil)
-	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to execute login.html", err)
-	}
+	httputil.HtmxResponse(w, http.StatusOK, "login.gohtml", nil)
 }

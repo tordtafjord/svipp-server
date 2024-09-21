@@ -33,7 +33,7 @@ func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			httputil.UnauthorizedResponse(w, "Missing authorization header", nil) // Changed to app method
+			httputil.UnauthorizedResponse(w, (r.Header.Get("HX-Request") == "true")) // Changed to app method
 			return
 		}
 
@@ -52,19 +52,19 @@ func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 			})
 
 			if err != nil {
-				httputil.UnauthorizedResponse(w, "Error parsing jwt with claims", err) // New method for detailed error handling
+				httputil.UnauthorizedResponse(w, (r.Header.Get("HX-Request") == "true")) // New method for detailed error handling
 				return
 			}
 
 			if !token.Valid {
-				httputil.UnauthorizedResponse(w, "Invalid token", nil)
+				httputil.UnauthorizedResponse(w, (r.Header.Get("HX-Request") == "true"))
 				return
 			}
 
 			ctx := context.WithValue(r.Context(), UserClaimsContextKey, claims) // Changed context key
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			httputil.UnauthorizedResponse(w, "Invalid authorization header format", nil)
+			httputil.UnauthorizedResponse(w, (r.Header.Get("HX-Request") == "true"))
 		}
 	})
 }
@@ -74,7 +74,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := r.Context().Value(UserClaimsContextKey).(*CustomClaims)
 			if !ok {
-				httputil.UnauthorizedResponse(w, "User claims not found", nil)
+				httputil.UnauthorizedResponse(w, (r.Header.Get("HX-Request") == "true"))
 				return
 			}
 
@@ -85,7 +85,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 				}
 			}
 
-			httputil.ErrorResponse(w, http.StatusForbidden, "Insufficient permissions", "Forbidden")
+			httputil.ForbiddenResponse(w, (r.Header.Get("HX-Request") == "true"))
 		})
 	}
 }

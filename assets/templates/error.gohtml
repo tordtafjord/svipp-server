@@ -1,0 +1,14 @@
+<div id="error-message"
+     class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative shadow-md max-w-md mx-auto mt-4">
+    <h3 class="font-bold mb-2">Error</h3>
+    <ul class="list-disc list-inside mb-4">
+        {{range .Error}}
+            <li>{{.}}</li>
+        {{end}}
+    </ul>
+    <button
+            class="text-red-500 hover:text-red-700 font-semibold text-sm py-1 px-2 rounded absolute top-2 right-2"
+            onclick="this.closest('#error-message').remove()">
+        ✕
+    </button>
+</div>
