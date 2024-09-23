@@ -3,14 +3,25 @@ package auth
 import (
 	"context"
 	"errors"
+	"github.com/golang-jwt/jwt/v4"
+	"net/http"
 	"svipp-server/internal/config"
 	"time"
-
-	"github.com/golang-jwt/jwt/v4"
 )
 
 type JWTService struct {
 	jwtSecret *[]byte
+}
+
+// New type for context key
+type contextKey string
+
+const UserClaimsContextKey contextKey = "userClaims"
+
+type CustomClaims struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
 }
 
 func NewJWTService(cfg *config.Config) *JWTService {
@@ -28,7 +39,7 @@ func (s *JWTService) GenerateJWT(userId int32, role string) (string, error) {
 }
 
 func GetUserIdFromContext(ctx context.Context) (int32, error) {
-	claims, ok := ctx.Value("userClaims").(*jwt.MapClaims)
+	claims, ok := ctx.Value(UserClaimsContextKey).(*jwt.MapClaims)
 	if !ok {
 		return 0, errors.New("Failed to get claims from context")
 	}
@@ -38,5 +49,29 @@ func GetUserIdFromContext(ctx context.Context) (int32, error) {
 	}
 
 	return 0, errors.New("Failed to get user id from claims")
+}
 
+func (s *JWTService) IsAuthenticated(r http.Request) bool {
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		return false
+	}
+	claims := &CustomClaims{} // Changed to CustomClaims
+	tokenString := cookie.Value
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Added signing method check
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return *s.jwtSecret, nil
+	})
+	if err != nil {
+		return false
+	}
+
+	if !token.Valid {
+		return false
+	}
+	return true
 }

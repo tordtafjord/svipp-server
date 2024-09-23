@@ -63,7 +63,7 @@ func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request
 	}
 	const expiration = 24 * 3600
 	cookie := http.Cookie{
-		Name:     "token",
+		Name:     "jwt",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
@@ -72,5 +72,5 @@ func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request
 		MaxAge:   expiration, // Set the expiration time in seconds (e.g., 1 hour)
 	}
 	http.SetCookie(writer, &cookie)
-	writer.Header().Set("HX-Redirect", "/")
+	writer.Header().Set("HX-Redirect", "/home")
 }

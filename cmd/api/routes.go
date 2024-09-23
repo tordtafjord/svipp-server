@@ -7,8 +7,10 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 	"svipp-server/assets"
 	"svipp-server/internal/handlers"
+	"svipp-server/internal/httputil"
 	"time"
 )
 
@@ -34,6 +36,17 @@ func (s *server) routes() http.Handler {
 	mux.Mount("/api/driver", setupDriverRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api/shopify", setupShopifyRoutes(h, jwtMiddleware, s.config.IsProd))
 
+	// Add a catch-all route at the end
+	mux.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		contentType := r.Header.Get("Content-Type")
+		if strings.Contains(contentType, "application/json") {
+			// For JSON requests, return a 404 Not Found
+			httputil.JSONResponse(w, http.StatusNotFound, map[string]string{"error": "Not Found"})
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
 	return mux
 }
 
@@ -41,6 +54,10 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 	r := chi.NewRouter()
 	r.Get("/", h.HomePage)
 	r.Get("/login", h.LoginPage)
+	r.Group(func(r chi.Router) {
+		r.Use(jwtMiddleware.JwtCookieAuthMiddleware)
+		r.Get("/home", h.FrontPage)
+	})
 
 	return r
 }

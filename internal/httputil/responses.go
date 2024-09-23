@@ -18,13 +18,12 @@ type multipleErrorsResponse struct {
 }
 
 func BadRequestResponse(writer http.ResponseWriter, err error, isHtmx bool) {
-	payload := errorResponse{Error: "Bad Request"}
 	log.Printf("Bad Reguest: %s", err.Error())
 	if !isHtmx {
-		JSONResponse(writer, http.StatusBadRequest, payload)
+		JSONResponse(writer, http.StatusBadRequest, errorResponse{Error: "Bad Request"})
 		return
 	}
-	HtmxResponse(writer, http.StatusBadRequest, "error.gohtml", payload)
+	HtmxResponse(writer, http.StatusBadRequest, "error.gohtml", multipleErrorsResponse{Error: []string{"Bad Request"}})
 }
 
 func InternalServerErrorResponse(writer http.ResponseWriter, logMessage string, err error, isHtmx bool) {
@@ -45,22 +44,15 @@ func InternalServerErrorResponse(writer http.ResponseWriter, logMessage string, 
 	// Optionally, you could also send this to an error tracking service
 	// sendToErrorTrackingService(detailedLogMessage)
 
-	payload := errorResponse{Error: "Internal Server Error"}
 	if !isHtmx {
-		JSONResponse(writer, http.StatusInternalServerError, payload)
+		JSONResponse(writer, http.StatusInternalServerError, errorResponse{Error: "Internal Server Error"})
 		return
 	}
-	HtmxResponse(writer, http.StatusInternalServerError, "error.gohtml", payload)
+	HtmxResponse(writer, http.StatusInternalServerError, "error.gohtml", multipleErrorsResponse{Error: []string{"Internal Server Error"}})
 }
 
-func UnauthorizedResponse(writer http.ResponseWriter, isHtmx bool) {
-	if !isHtmx {
-		JSONResponse(writer, http.StatusUnauthorized, errorResponse{Error: "Unauthorized"})
-		return
-	}
-	// For HTMX requests, set the HX-Redirect header to redirect to the login page
-	writer.Header().Set("HX-Redirect", "/login")
-	writer.WriteHeader(http.StatusUnauthorized)
+func UnauthorizedResponse(writer http.ResponseWriter) {
+	JSONResponse(writer, http.StatusUnauthorized, errorResponse{Error: "Unauthorized"})
 }
 
 func ForbiddenResponse(writer http.ResponseWriter, isHtmx bool) {
@@ -75,12 +67,11 @@ func ForbiddenResponse(writer http.ResponseWriter, isHtmx bool) {
 
 func ErrorResponse(writer http.ResponseWriter, code int, logMessage, userMessage string, isHtmx bool) {
 	log.Println(logMessage)
-	payload := errorResponse{Error: userMessage}
 	if !isHtmx {
-		JSONResponse(writer, code, payload)
+		JSONResponse(writer, code, errorResponse{Error: userMessage})
 		return
 	}
-	HtmxResponse(writer, code, "error.gohtml", payload)
+	HtmxResponse(writer, http.StatusOK, "error.gohtml", multipleErrorsResponse{Error: []string{userMessage}})
 }
 
 func ValidationFailedResponse(writer http.ResponseWriter, validationMessages []string, isHtmx bool) {
