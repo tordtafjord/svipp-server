@@ -21,3 +21,18 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 	httputil.HtmxResponse(w, http.StatusOK, "frontpage.gohtml", nil)
 }
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Clear the JWT cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+	// Redirect to the login page or home page
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}

@@ -57,6 +57,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtMiddleware.JwtCookieAuthMiddleware)
 		r.Get("/home", h.FrontPage)
+		r.Get("/logout", h.Logout) // Add this line for the logout route
 	})
 
 	return r
