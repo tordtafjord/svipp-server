@@ -16,7 +16,7 @@ type LoginRequest struct {
 
 func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request) {
 	var params LoginRequest
-	isHtmx := !request.Context().Value(httputil.IsJsonContextKey).(bool)
+	isHtmx := request.Header.Get("Content-Type") != "application/json"
 
 	// Parse the request body
 	if !isHtmx {
