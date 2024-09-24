@@ -93,13 +93,13 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin))
+			r.Use(jwtMiddleware.CombinedAuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/users", h.CreateUser)
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtAuthMiddleware)
+		r.Use(jwtMiddleware.CombinedAuthMiddleware)
 		r.Get("/users/me", h.GetMyAccount)
 		r.Post("/orders", h.NewOrder)
 		r.Get("/orders/my", h.GetMyOrders)

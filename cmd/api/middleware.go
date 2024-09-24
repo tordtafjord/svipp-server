@@ -20,7 +20,15 @@ func NewJWTAuthMiddleware(secretKey []byte) *JWTAuthMiddleware {
 	return &JWTAuthMiddleware{secretKey: secretKey}
 }
 
-// New custom claims struct
+func (m *JWTAuthMiddleware) CombinedAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") == "application/json" {
+			m.JwtAuthMiddleware(next).ServeHTTP(w, r)
+		} else {
+			m.JwtCookieAuthMiddleware(next).ServeHTTP(w, r)
+		}
+	})
+}
 
 func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
