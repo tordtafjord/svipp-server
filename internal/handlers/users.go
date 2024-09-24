@@ -15,8 +15,8 @@ type createUserRequest struct {
 	Name            *string `json:"name" validate:"omitempty,min=2,max=100"`
 	Phone           string  `json:"phone" validate:"required,e164"`
 	Email           string  `json:"email" validate:"required,email"`
-	Password        string  `json:"password" validate:"required,min=8,max=50"`
-	ConfirmPassword string  `json:"confirmPassword" validate:"required,min=8,max=50,eqfield=Password"`
+	Password        string  `json:"password" validate:"required,min=8,max=64"`
+	ConfirmPassword string  `json:"confirmPassword" validate:"required,min=8,max=64,eqfield=Password"`
 	DeviceToken     *string `json:"deviceToken" validate:"omitempty"`
 }
 

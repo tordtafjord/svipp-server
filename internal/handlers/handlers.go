@@ -48,6 +48,8 @@ func validateStruct(s interface{}) []string {
 			errorMessages = append(errorMessages, fmt.Sprintf("%s må være minst %s tegn langt", err.Field(), err.Param()))
 		case "e164":
 			errorMessages = append(errorMessages, fmt.Sprintf("'%s' er ikke et gyldig telefonnummer", err.Value()))
+		case "eqfield":
+			errorMessages = append(errorMessages, "Passord er ikke identiske")
 		default:
 			errorMessages = append(errorMessages, fmt.Sprintf("%s tilfredstiller ikke %s krav", err.Field(), err.Tag()))
 		}
