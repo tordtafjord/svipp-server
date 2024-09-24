@@ -65,7 +65,7 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		Role:        models.RoleUser.String(),
 	})
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Mislyktes i å lage en ny bruke, har du en konto fra før av?", false)
+		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Mislyktes i å lage en ny bruke, har du en konto fra før av?", isHtmx)
 		return
 	}
 
