@@ -6,15 +6,19 @@ import (
 )
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	ok := h.jwtService.IsAuthenticated(*r)
-	if !ok {
-		httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", nil)
+	if h.jwtService.IsAuthenticated(*r) {
+		h.FrontPage(w, r)
 		return
 	}
-	h.FrontPage(w, r)
+	httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", nil)
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
+	if h.jwtService.IsAuthenticated(*r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	httputil.HtmxResponse(w, http.StatusOK, "login.gohtml", nil)
 }
 
