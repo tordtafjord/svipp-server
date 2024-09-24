@@ -63,7 +63,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 
 	r.Group(func(r chi.Router) {
 		if prod {
-			r.Use(jwtMiddleware.JwtCookieAuthMiddleware, RequireRole(models.RoleAdmin.String()))
+			r.Use(jwtMiddleware.JwtCookieAuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Get("/signup", h.SignupPage)
 	})
