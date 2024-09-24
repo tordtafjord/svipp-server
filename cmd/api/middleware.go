@@ -5,9 +5,11 @@ import (
 	"crypto/subtle"
 	"errors"
 	"github.com/golang-jwt/jwt/v4"
+	"log"
 	"net/http"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/httputil"
+	"svipp-server/internal/models"
 )
 
 type JWTAuthMiddleware struct {
@@ -65,6 +67,7 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 		// Get the JWT token from the cookie
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
+			log.Printf("No cookie present %v", cookie)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
@@ -80,11 +83,13 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 			return m.secretKey, nil
 		})
 		if err != nil {
+			log.Printf("Failed parsing jwt with claims %v", err)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
 		if !token.Valid {
+			log.Printf("Token not valid %v", token.Claims)
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
@@ -94,23 +99,26 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 	})
 }
 
-func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
+func RequireRole(allowedRoles ...models.Role) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := r.Context().Value(auth.UserClaimsContextKey).(*auth.CustomClaims)
 			if !ok {
-				httputil.UnauthorizedResponse(w)
+				log.Printf("Error loading claims %v", r)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			for _, role := range allowedRoles {
-				if claims.Role == role {
+				if claims.Role == role.String() {
 					next.ServeHTTP(w, r)
 					return
 				}
 			}
 
-			httputil.ForbiddenResponse(w, (r.Header.Get("HX-Request") == "true"))
+			log.Printf("%v not present in %v", claims.Role, allowedRoles)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		})
 	}
 }

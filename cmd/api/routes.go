@@ -93,7 +93,7 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin.String()))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/users", h.CreateUser)
 	})
@@ -118,14 +118,14 @@ func setupDriverRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, is
 	// Admin-only routes
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin.String()))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/", h.CreateDriver)
 	})
 
 	// Driver and admin routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver.String(), models.RoleAdmin.String()))
+		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver, models.RoleAdmin))
 
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
