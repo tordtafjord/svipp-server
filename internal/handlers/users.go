@@ -8,27 +8,50 @@ import (
 	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
 	"svipp-server/internal/models"
+	"svipp-server/internal/password"
 )
 
 type createUserRequest struct {
-	Name        *string `json:"name" validate:"omitempty,min=2,max=100"`
-	Phone       string  `json:"phone" validate:"required,e164"`
-	Email       string  `json:"email" validate:"required,email"`
-	Password    string  `json:"password" validate:"required,min=8,max=50"`
-	DeviceToken *string `json:"deviceToken" validate:"omitempty"`
+	Name            *string `json:"name" validate:"omitempty,min=2,max=100"`
+	Phone           string  `json:"phone" validate:"required,e164"`
+	Email           string  `json:"email" validate:"required,email"`
+	Password        string  `json:"password" validate:"required,min=8,max=50"`
+	ConfirmPassword string  `json:"confirmPassword" validate:"required,min=8,max=50,eqfield=Password"`
+	DeviceToken     *string `json:"deviceToken" validate:"omitempty"`
 }
 
 func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) {
 	var params createUserRequest
+	isHtmx := request.Header.Get("HX-Request") == "true"
 
-	// Parse the JSON request body
-	if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
-		httputil.BadRequestResponse(writer, err, false)
-		return
+	// Parse the signup request body
+	if !isHtmx {
+		if err := json.NewDecoder(request.Body).Decode(&params); err != nil {
+			httputil.BadRequestResponse(writer, err, false)
+			return
+		}
+	} else {
+		if err := request.ParseForm(); err != nil {
+			httputil.BadRequestResponse(writer, err, true)
+			return
+		}
+		name := request.FormValue("name")
+		phone := fmt.Sprintf("+%s%s", request.FormValue("countryCode"), request.FormValue("phone"))
+		params.Name = &name
+		params.Phone = phone
+		params.Email = request.FormValue("email")
+		params.Password = request.FormValue("password")
+		params.ConfirmPassword = request.FormValue("confirmPassword")
 	}
 
 	if validationErrors := validateStruct(params); validationErrors != nil {
-		httputil.ValidationFailedResponse(writer, validationErrors, false)
+		httputil.ValidationFailedResponse(writer, validationErrors, isHtmx)
+		return
+	}
+
+	pswdHash, err := password.Hash(params.Password)
+	if err != nil {
+		httputil.InternalServerErrorResponse(writer, "Failed hashing password", err, isHtmx)
 		return
 	}
 
@@ -36,7 +59,7 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		Name:        params.Name,
 		Phone:       params.Phone,
 		Email:       &params.Email,
-		Password:    &params.Password,
+		Password:    &pswdHash,
 		DeviceToken: params.DeviceToken,
 		Temporary:   new(bool), // Use new(bool) to create a pointer to false
 		Role:        models.RoleUser.String(),
@@ -46,7 +69,20 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	httputil.JSONResponse(writer, http.StatusCreated, user)
+	token, err := h.jwtService.GenerateJWT(user.ID, user.Role)
+	if err != nil {
+		httputil.InternalServerErrorResponse(writer, "Error generating token", err, isHtmx)
+		return
+	}
+
+	if !isHtmx {
+		httputil.JSONResponse(writer, 200, map[string]string{"token": token})
+		return
+	}
+
+	cookie := h.jwtService.GenerateJwtCookie(token)
+	http.SetCookie(writer, &cookie)
+	writer.Header().Set("HX-Redirect", "/home")
 }
 
 func (h *Handler) GetMyAccount(writer http.ResponseWriter, request *http.Request) {

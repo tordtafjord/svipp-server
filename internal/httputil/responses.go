@@ -48,7 +48,7 @@ func InternalServerErrorResponse(writer http.ResponseWriter, logMessage string, 
 		JSONResponse(writer, http.StatusInternalServerError, errorResponse{Error: "Internal Server Error"})
 		return
 	}
-	HtmxResponse(writer, http.StatusInternalServerError, "error.gohtml", multipleErrorsResponse{Error: []string{"Internal Server Error"}})
+	HtmxResponse(writer, http.StatusOK, "error.gohtml", multipleErrorsResponse{Error: []string{"Internal Server Error"}})
 }
 
 func UnauthorizedResponse(writer http.ResponseWriter) {

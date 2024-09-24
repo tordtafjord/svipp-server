@@ -61,16 +61,8 @@ func (h *Handler) Authenticate(writer http.ResponseWriter, request *http.Request
 		httputil.JSONResponse(writer, 200, map[string]string{"token": token})
 		return
 	}
-	const expiration = 24 * 3600
-	cookie := http.Cookie{
-		Name:     "jwt",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true, // Set to true if using HTTPS
-		SameSite: http.SameSiteStrictMode,
-		MaxAge:   expiration, // Set the expiration time in seconds (e.g., 1 hour)
-	}
+
+	cookie := h.jwtService.GenerateJwtCookie(token)
 	http.SetCookie(writer, &cookie)
 	writer.Header().Set("HX-Redirect", "/home")
 }

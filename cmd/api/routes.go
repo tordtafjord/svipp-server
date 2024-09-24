@@ -11,6 +11,7 @@ import (
 	"svipp-server/assets"
 	"svipp-server/internal/handlers"
 	"svipp-server/internal/httputil"
+	"svipp-server/internal/models"
 	"time"
 )
 
@@ -60,6 +61,13 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 		r.Get("/logout", h.Logout) // Add this line for the logout route
 	})
 
+	r.Group(func(r chi.Router) {
+		if prod {
+			r.Use(jwtMiddleware.JwtCookieAuthMiddleware, RequireRole(models.RoleAdmin.String()))
+		}
+		r.Get("/signup", h.SignupPage)
+	})
+
 	return r
 }
 
@@ -85,7 +93,7 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("admin"))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin.String()))
 		}
 		r.Post("/users", h.CreateUser)
 	})
@@ -110,14 +118,14 @@ func setupDriverRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, is
 	// Admin-only routes
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("admin"))
+			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin.String()))
 		}
 		r.Post("/", h.CreateDriver)
 	})
 
 	// Driver and admin routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole("driver", "admin"))
+		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver.String(), models.RoleAdmin.String()))
 
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

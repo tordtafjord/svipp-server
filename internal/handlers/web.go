@@ -22,6 +22,10 @@ func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 	httputil.HtmxResponse(w, http.StatusOK, "frontpage.gohtml", nil)
 }
 
+func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
+	httputil.HtmxResponse(w, http.StatusOK, "signup.gohtml", nil)
+}
+
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Clear the JWT cookie
 	http.SetCookie(w, &http.Cookie{
