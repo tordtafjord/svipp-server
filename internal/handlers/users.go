@@ -22,7 +22,7 @@ type createUserRequest struct {
 
 func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) {
 	var params createUserRequest
-	isHtmx := request.Header.Get("HX-Request") == "true"
+	isHtmx := !request.Context().Value(httputil.IsJsonContextKey).(bool)
 
 	// Parse the signup request body
 	if !isHtmx {
@@ -65,7 +65,7 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		Role:        models.RoleUser.String(),
 	})
 	if err != nil {
-		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Mislyktes i å lage en ny bruke, har du en konto fra før av?", isHtmx)
+		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Oppretting av konto mislyktes, har du en fra før av?", isHtmx)
 		return
 	}
 

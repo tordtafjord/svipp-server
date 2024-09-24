@@ -62,7 +62,8 @@ func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, claims) // Changed context key
+			ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, claims)
+			ctx = context.WithValue(ctx, httputil.IsJsonContextKey, true) // Added isJson context
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			httputil.UnauthorizedResponse(w)
@@ -76,7 +77,7 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
 			log.Printf("No cookie present %v", cookie)
-			http.Redirect(w, r, "/login", http.StatusFound)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
@@ -92,17 +93,18 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 		})
 		if err != nil {
 			log.Printf("Failed parsing jwt with claims %v", err)
-			http.Redirect(w, r, "/login", http.StatusFound)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		if !token.Valid {
 			log.Printf("Token not valid %v", token.Claims)
-			http.Redirect(w, r, "/login", http.StatusFound)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, claims) // Changed context key
+		ctx = context.WithValue(ctx, httputil.IsJsonContextKey, false)           // Added isJson context
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -113,7 +115,7 @@ func RequireRole(allowedRoles ...models.Role) func(http.Handler) http.Handler {
 			claims, ok := r.Context().Value(auth.UserClaimsContextKey).(*auth.CustomClaims)
 			if !ok {
 				log.Printf("Error loading claims %v", r)
-				w.WriteHeader(http.StatusUnauthorized)
+				http.Redirect(w, r, "/", http.StatusSeeOther)
 				return
 			}
 
@@ -124,8 +126,8 @@ func RequireRole(allowedRoles ...models.Role) func(http.Handler) http.Handler {
 				}
 			}
 
-			log.Printf("%v not present in %v", claims.Role, allowedRoles)
-			w.WriteHeader(http.StatusUnauthorized)
+			log.Printf("Role %v not present in required roles %v", claims.Role, allowedRoles)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		})
 	}
