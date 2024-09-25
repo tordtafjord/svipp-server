@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const confirmOrderById = `-- name: ConfirmOrderById :one
@@ -16,7 +18,7 @@ SET
     confirmed_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 `
 
 func (q *Queries) ConfirmOrderById(ctx context.Context, id int32) (Order, error) {
@@ -41,6 +43,9 @@ func (q *Queries) ConfirmOrderById(ctx context.Context, id int32) (Order, error)
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
+		&i.PublicID,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 	)
 	return i, err
 }
@@ -66,7 +71,7 @@ VALUES (
            $7,
            $8
        )
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 `
 
 type CreateOrderParams struct {
@@ -111,6 +116,9 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
+		&i.PublicID,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 	)
 	return i, err
 }
@@ -147,7 +155,7 @@ SELECT
     driving_minutes,
     price
 FROM temp_data
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 `
 
 type CreateOrderFromTempOrderParams struct {
@@ -178,6 +186,9 @@ func (q *Queries) CreateOrderFromTempOrder(ctx context.Context, arg CreateOrderF
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
+		&i.PublicID,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 	)
 	return i, err
 }
@@ -260,8 +271,83 @@ func (q *Queries) GetOrderDriverIdByOrderId(ctx context.Context, id int32) ([]*i
 	return items, nil
 }
 
+const getOrderInfoByPublicId = `-- name: GetOrderInfoByPublicId :one
+SELECT
+    o.pickup_address,
+    o.pickup_coords,
+    o.delivery_address,
+    o.delivery_coords,
+    o.status,
+    o.distance,
+    o.driving_minutes,
+    o.created_at,
+    o.confirmed_at,
+    o.accepted_at,
+    o.picked_up_at,
+    o.delivered_at,
+    o.cancelled_at,
+    sender.name AS sender_name,
+    -- Add more sender columns as needed
+    driver.name AS driver_name,
+    driver.rates AS driver_rates,
+    driver.rate_total AS driver_rate_total
+FROM
+    orders o
+        LEFT JOIN
+    users sender ON o.sender_id = sender.id
+        LEFT JOIN
+    users driver ON o.driver_id = driver.id
+WHERE o.public_id = $1::uuid AND o.deleted_at IS NULL
+`
+
+type GetOrderInfoByPublicIdRow struct {
+	PickupAddress   string             `json:"pickupAddress"`
+	PickupCoords    interface{}        `json:"pickupCoords"`
+	DeliveryAddress string             `json:"deliveryAddress"`
+	DeliveryCoords  interface{}        `json:"deliveryCoords"`
+	Status          string             `json:"status"`
+	Distance        int32              `json:"distance"`
+	DrivingMinutes  float64            `json:"drivingMinutes"`
+	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
+	ConfirmedAt     pgtype.Timestamptz `json:"confirmedAt"`
+	AcceptedAt      pgtype.Timestamptz `json:"acceptedAt"`
+	PickedUpAt      pgtype.Timestamptz `json:"pickedUpAt"`
+	DeliveredAt     pgtype.Timestamptz `json:"deliveredAt"`
+	CancelledAt     pgtype.Timestamptz `json:"cancelledAt"`
+	SenderName      *string            `json:"senderName"`
+	DriverName      *string            `json:"driverName"`
+	DriverRates     *int32             `json:"driverRates"`
+	DriverRateTotal *int32             `json:"driverRateTotal"`
+}
+
+// Add more receiver columns as needed
+func (q *Queries) GetOrderInfoByPublicId(ctx context.Context, dollar_1 pgtype.UUID) (GetOrderInfoByPublicIdRow, error) {
+	row := q.db.QueryRow(ctx, getOrderInfoByPublicId, dollar_1)
+	var i GetOrderInfoByPublicIdRow
+	err := row.Scan(
+		&i.PickupAddress,
+		&i.PickupCoords,
+		&i.DeliveryAddress,
+		&i.DeliveryCoords,
+		&i.Status,
+		&i.Distance,
+		&i.DrivingMinutes,
+		&i.CreatedAt,
+		&i.ConfirmedAt,
+		&i.AcceptedAt,
+		&i.PickedUpAt,
+		&i.DeliveredAt,
+		&i.CancelledAt,
+		&i.SenderName,
+		&i.DriverName,
+		&i.DriverRates,
+		&i.DriverRateTotal,
+	)
+	return i, err
+}
+
 const getOrdersByDriverId = `-- name: GetOrdersByDriverId :many
-SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 FROM orders
 WHERE driver_id = $1
 ORDER BY created_at DESC
@@ -295,6 +381,9 @@ func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]O
 			&i.DeliveredAt,
 			&i.UpdatedAt,
 			&i.CancelledAt,
+			&i.PublicID,
+			&i.PickupCoords,
+			&i.DeliveryCoords,
 		); err != nil {
 			return nil, err
 		}
@@ -307,7 +396,7 @@ func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]O
 }
 
 const getOrdersByUserId = `-- name: GetOrdersByUserId :many
-SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 FROM orders
 WHERE user_id = $1
 ORDER BY created_at DESC
@@ -341,6 +430,9 @@ func (q *Queries) GetOrdersByUserId(ctx context.Context, userID int32) ([]Order,
 			&i.DeliveredAt,
 			&i.UpdatedAt,
 			&i.CancelledAt,
+			&i.PublicID,
+			&i.PickupCoords,
+			&i.DeliveryCoords,
 		); err != nil {
 			return nil, err
 		}
@@ -361,7 +453,7 @@ SET
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $2      -- Order ID for which the driver_id needs to be updated
   AND driver_id IS NULL  -- Only update if driver_id is not already set
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
+RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_minutes, price, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords
 `
 
 type SetDriverIdByOrderIdParams struct {
@@ -391,6 +483,9 @@ func (q *Queries) SetDriverIdByOrderId(ctx context.Context, arg SetDriverIdByOrd
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
+		&i.PublicID,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 	)
 	return i, err
 }

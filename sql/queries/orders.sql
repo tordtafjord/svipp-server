@@ -75,6 +75,36 @@ VALUES (
        )
 RETURNING *;
 
+-- name: GetOrderInfoByPublicId :one
+SELECT
+    o.pickup_address,
+    o.pickup_coords,
+    o.delivery_address,
+    o.delivery_coords,
+    o.status,
+    o.distance,
+    o.driving_minutes,
+    o.created_at,
+    o.confirmed_at,
+    o.accepted_at,
+    o.picked_up_at,
+    o.delivered_at,
+    o.cancelled_at,
+    sender.name AS sender_name,
+    -- Add more sender columns as needed
+    driver.name AS driver_name,
+    driver.rates AS driver_rates,
+    driver.rate_total AS driver_rate_total
+-- Add more receiver columns as needed
+FROM
+    orders o
+        LEFT JOIN
+    users sender ON o.sender_id = sender.id
+        LEFT JOIN
+    users driver ON o.driver_id = driver.id
+WHERE o.public_id = $1::uuid AND o.deleted_at IS NULL;
+
+
 -- name: GetOrderDriverIdByOrderId :many
 SELECT driver_id
 FROM orders

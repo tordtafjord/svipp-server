@@ -35,6 +35,9 @@ type Order struct {
 	DeliveredAt     pgtype.Timestamptz `json:"deliveredAt"`
 	UpdatedAt       pgtype.Timestamptz `json:"updatedAt"`
 	CancelledAt     pgtype.Timestamptz `json:"cancelledAt"`
+	PublicID        pgtype.UUID        `json:"publicId"`
+	PickupCoords    interface{}        `json:"pickupCoords"`
+	DeliveryCoords  interface{}        `json:"deliveryCoords"`
 }
 
 type Rating struct {

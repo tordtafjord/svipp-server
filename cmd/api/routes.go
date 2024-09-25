@@ -55,6 +55,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 	r := chi.NewRouter()
 	r.Get("/", h.HomePage)
 	r.Get("/login", h.LoginPage)
+	r.Get("/orders/{uuid}", h.SingleOrderPage)
 	r.Group(func(r chi.Router) {
 		r.Use(jwtMiddleware.JwtCookieAuthMiddleware)
 		r.Get("/home", h.FrontPage)
