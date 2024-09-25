@@ -570,16 +570,8 @@ video {
   inset: 0px;
 }
 
-.bottom-8 {
-  bottom: 2rem;
-}
-
 .right-2 {
   right: 0.5rem;
-}
-
-.right-8 {
-  right: 2rem;
 }
 
 .top-2 {
@@ -655,10 +647,6 @@ video {
   width: 100%;
 }
 
-.w-screen {
-  width: 100vw;
-}
-
 .max-w-0 {
   max-width: 0px;
 }
@@ -673,6 +661,10 @@ video {
 
 .flex-shrink-0 {
   flex-shrink: 0;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 
 @keyframes spin {
@@ -699,6 +691,10 @@ video {
 
 .items-center {
   align-items: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
 }
 
 .justify-center {
@@ -1041,4 +1037,10 @@ video {
 
 .group:hover .group-hover\:max-w-full {
   max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .sm\:p-8 {
+    padding: 2rem;
+  }
 }

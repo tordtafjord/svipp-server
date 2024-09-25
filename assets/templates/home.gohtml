@@ -1,18 +1,20 @@
 {{ template "header.gohtml" }}
 
-<div class="bg-green-100 relative min-h-screen">
-    <div class="flex justify-center items-center h-screen w-screen">
+<div class="bg-green-100 min-h-screen flex flex-col">
+    <div class="flex-grow flex justify-center items-center">
         <a href="/login">
             <h1 class="text-6xl font-bold text-green-600 shadow-lg p-6 bg-white rounded-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-125">
                 Svipp
             </h1>
         </a>
     </div>
-    <a href="/login"
-       class="absolute bottom-8 right-8 text-green-600 text-lg font-semibold bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 ease-in-out group">
-        Login
-        <span class="block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-green-600"></span>
-    </a>
+    <div class="p-4 sm:p-8 flex justify-end">
+        <a href="/login"
+           class="text-green-600 text-lg font-semibold bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 ease-in-out group">
+            Login
+            <span class="block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-green-600"></span>
+        </a>
+    </div>
 </div>
 
 {{ template "footer.gohtml" }}
