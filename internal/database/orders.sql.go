@@ -297,7 +297,7 @@ FROM
     users sender ON o.sender_id = sender.id
         LEFT JOIN
     users driver ON o.driver_id = driver.id
-WHERE o.public_id = $1::uuid AND o.deleted_at IS NULL
+WHERE o.public_id = $1::uuid
 `
 
 type GetOrderInfoByPublicIdRow struct {
