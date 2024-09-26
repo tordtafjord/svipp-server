@@ -8,6 +8,7 @@ import (
 	"google.golang.org/api/option"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
+	"svipp-server/internal/sms"
 	"svipp-server/sql"
 )
 
@@ -32,38 +33,7 @@ type Config struct {
 	}
 	FirebaseApp *firebase.App
 	IsProd      bool
-}
-
-func TestConfig() (*Config, error) {
-	cfg := &Config{}
-	cfg.IsProd = env.GetBool("IS_PRODUCTION", false)
-	err := env.LoadEnv(cfg.IsProd)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.BaseURL = env.GetString("BASE_URL", "http://localhost:8080")
-	cfg.HTTPPort = env.GetInt("PORT", 8080)
-	cfg.DB.URL = env.GetString("TEST_DATABASE_URL", "postgres://svipp@localhost:5432/svipp-test?sslmode=disable")
-	cfg.DB.Automigrate = env.GetBool("DB_AUTOMIGRATE", true)
-	cfg.JWT.SecretKey = []byte(env.GetString("JWT_SECRET", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q="))
-	cfg.Maps.APIKey = env.GetString("GOOGLE_MAPS_API_KEY", "")
-	cfg.Pricing.PricingFactor = env.GetFloat("REVENUE_FACTOR", 1.2)
-	cfg.Pricing.CostPerMin = env.GetFloat("DRIVER_COST_PER_MIN", 5.0)
-
-	// Initialize Firebase Admin SDK
-	sa := option.WithCredentialsFile("transport-91700-firebase-adminsdk-b09hi-816702cf95.json")
-	cfg.FirebaseApp, err = firebase.NewApp(context.Background(), nil, sa)
-	if err != nil {
-		return nil, err
-	}
-
-	err = cfg.initDB()
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+	SmsClient   *sms.TwilioClient
 }
 
 func New() (*Config, error) {
@@ -84,6 +54,12 @@ func New() (*Config, error) {
 	cfg.Maps.APIKey = env.GetString("GOOGLE_MAPS_API_KEY", "")
 	cfg.Pricing.PricingFactor = env.GetFloat("REVENUE_FACTOR", 1.2)
 	cfg.Pricing.CostPerMin = env.GetFloat("DRIVER_COST_PER_MIN", 5.0)
+
+	// Twilio sms client config
+	messageServiceSID := env.GetString("TWILIO_MESSAGING_SERVICE_SID", "")
+	accountSID := env.GetString("TWILIO_ACCOUNT_SID", "")
+	authToken := env.GetString("TWILIO_AUTH_TOKEN", "")
+	cfg.SmsClient = sms.NewTwilioClient(accountSID, authToken, messageServiceSID)
 
 	// Initialize Firebase Admin SDK
 	sa := option.WithCredentialsFile("transport-91700-firebase-adminsdk-b09hi-816702cf95.json")
