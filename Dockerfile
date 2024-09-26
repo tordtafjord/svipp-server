@@ -20,6 +20,9 @@ FROM gcr.io/distroless/static-debian12:latest-amd64
 # Copy the binary from the builder stage
 COPY --from=builder /app/main /
 
+# Use dokku env for secrets
+COPY --from=builder /app/.env /.env
+
 # Expose the port the app runs on
 EXPOSE 80
 
