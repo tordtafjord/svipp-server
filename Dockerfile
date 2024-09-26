@@ -1,11 +1,10 @@
-# Start from the official Go image
-FROM golang:1.23
+# Build stage
+FROM golang:1.23 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
 
 # Copy the go.mod and go.sum files first and download dependencies
-# This is done before copying the entire codebase to leverage Docker cache
 COPY go.mod go.sum ./
 RUN go mod download
 
@@ -13,10 +12,16 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o main ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/api
+
+# Final stage
+FROM gcr.io/distroless/static-debian12:latest-amd64
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/main /
 
 # Expose the port the app runs on
 EXPOSE 80
 
 # Run the binary
-CMD ["./main"]
+CMD ["/main"]

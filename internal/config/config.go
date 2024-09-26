@@ -5,11 +5,10 @@ import (
 	firebase "firebase.google.com/go"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/pressly/goose/v3"
 	"google.golang.org/api/option"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
+	"svipp-server/sql"
 )
 
 type Config struct {
@@ -111,23 +110,10 @@ func (c *Config) initDB() error {
 	c.DB.DBQ = database.New(c.DB.DBPool)
 
 	if c.DB.Automigrate {
-		if err := c.runMigrations(); err != nil {
+		if err := sql.RunMigrations(c.DB.DBPool); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (c *Config) runMigrations() error {
-	goose.SetBaseFS(nil)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return err
-	}
-
-	db := stdlib.OpenDBFromPool(c.DB.DBPool)
-	defer db.Close()
-
-	return goose.Up(db, "sql/migrations")
 }
