@@ -22,6 +22,8 @@ COPY --from=builder /app/main /
 
 # Use dokku env for secrets
 COPY --from=builder /app/.env /.env
+# Dokku health check config
+COPY --from=builder /app/app.json /app.json
 
 # Expose the port the app runs on
 EXPOSE 80
