@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"googlemaps.github.io/maps"
-	"svipp-server/internal/config"
 )
 
 type MapsService struct {
 	client *maps.Client
 }
 
-func NewMapsService(cfg *config.Config) *MapsService {
-	return &MapsService{client: cfg.Maps.Client}
+func NewMapsService(gmClient *maps.Client) *MapsService {
+	return &MapsService{client: gmClient}
 }
 
 func (s *MapsService) GetDistanceAndDuration(ctx context.Context, pickupAddress, destinationAddress string) (int32, int32, error) {

@@ -6,7 +6,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"log"
 	"net/http"
-	"svipp-server/internal/config"
 	"svipp-server/internal/models"
 	"time"
 )
@@ -27,8 +26,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(cfg *config.Config) *JWTService {
-	return &JWTService{jwtSecret: &cfg.JWT.SecretKey}
+func NewJWTService(secret *[]byte) *JWTService {
+	return &JWTService{jwtSecret: secret}
 }
 
 func (s *JWTService) GenerateJWT(userId int32, role string) (string, error) {

@@ -10,7 +10,8 @@ import (
 )
 
 type server struct {
-	config *config.Config
+	config   *config.Config
+	services *config.Services
 }
 
 func main() {
@@ -26,13 +27,14 @@ func run() error {
 
 	fmt.Printf("\nRunning svipp-server version: %s\n", version.Get())
 
-	cfg, err := config.New()
+	cfg, services, err := config.New()
 	if err != nil {
 		return err
 	}
 
 	srv := &server{
-		config: cfg,
+		config:   cfg,
+		services: services,
 	}
 
 	return srv.serveHTTP()

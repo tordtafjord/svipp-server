@@ -19,13 +19,12 @@ type Handler struct {
 
 var validate *validator.Validate
 
-func NewHandler(cfg *config.Config) *Handler {
-
+func NewHandler(srv *config.Services) *Handler {
 	return &Handler{
-		db:          cfg.DB.DBQ,
-		jwtService:  auth.NewJWTService(cfg),
-		smsService:  cfg.SmsClient,
-		mapsService: maps.NewMapsService(cfg),
+		db:          srv.DB,
+		jwtService:  srv.JwtService,
+		smsService:  srv.SmsClient,
+		mapsService: srv.MapsClient,
 	}
 }
 

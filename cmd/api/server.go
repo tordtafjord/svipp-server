@@ -26,13 +26,13 @@ func (s *server) serveHTTP() error {
 
 	log.Printf("Server is starting on %s", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil {
-		s.config.DB.DBPool.Close()
+		s.services.DBPool.Close()
 		log.Printf("Server exited: %v", err)
 		return error(errors.New("server exited"))
 	}
 
 	// This line will only be reached if ListenAndServe returns without error (which is unlikely)
-	s.config.DB.DBPool.Close()
+	s.services.DBPool.Close()
 	log.Printf("Server exited")
 	return error(errors.New("server exited"))
 }

@@ -16,13 +16,13 @@ import (
 
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
-	h := handlers.NewHandler(s.config)
-	jwtMiddleware := NewJWTAuthMiddleware(s.config.JWT.SecretKey)
+	h := handlers.NewHandler(s.services)
+	jwtMiddleware := NewJWTAuthMiddleware(s.config.JwtSecret)
 
 	setupBaseMiddlewares(mux)
 	setupStaticServing(mux)
 	mux.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		err := s.config.DB.DBPool.Ping(r.Context())
+		err := s.services.DBPool.Ping(r.Context())
 		if err != nil {
 			log.Printf("Database health check failed: %v", err)
 			w.WriteHeader(http.StatusServiceUnavailable)

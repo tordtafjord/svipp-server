@@ -10,16 +10,16 @@ import (
 )
 
 type TwilioClient struct {
-	AccountSID          string
-	AuthToken           string
-	MessagingServiceSid string
+	accountSID          string
+	authToken           string
+	messagingServiceSid string
 }
 
 func NewTwilioClient(accountSID, authToken, messagingServiceSid string) *TwilioClient {
 	return &TwilioClient{
-		AccountSID:          accountSID,
-		AuthToken:           authToken,
-		MessagingServiceSid: messagingServiceSid,
+		accountSID:          accountSID,
+		authToken:           authToken,
+		messagingServiceSid: messagingServiceSid,
 	}
 }
 
@@ -34,16 +34,16 @@ func (c *TwilioClient) SendSMSAsync(to, message string) {
 }
 
 func (c *TwilioClient) SendSMS(to, message string) error {
-	urlStr := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", c.AccountSID)
+	urlStr := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", c.accountSID)
 
 	msgData := url.Values{}
 	msgData.Set("To", to)
-	msgData.Set("MessagingServiceSid", c.MessagingServiceSid)
+	msgData.Set("messagingServiceSid", c.messagingServiceSid)
 	msgData.Set("Body", message)
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", urlStr, strings.NewReader(msgData.Encode()))
-	req.SetBasicAuth(c.AccountSID, c.AuthToken)
+	req.SetBasicAuth(c.accountSID, c.authToken)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
