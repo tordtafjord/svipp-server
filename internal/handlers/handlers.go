@@ -6,13 +6,15 @@ import (
 	"svipp-server/internal/auth"
 	"svipp-server/internal/config"
 	"svipp-server/internal/database"
+	"svipp-server/internal/maps"
 	"svipp-server/internal/sms"
 )
 
 type Handler struct {
-	db         *database.Queries
-	jwtService *auth.JWTService
-	smsClient  *sms.TwilioClient
+	db          *database.Queries
+	jwtService  *auth.JWTService
+	smsService  *sms.TwilioClient
+	mapsService *maps.MapsService
 }
 
 var validate *validator.Validate
@@ -20,9 +22,10 @@ var validate *validator.Validate
 func NewHandler(cfg *config.Config) *Handler {
 
 	return &Handler{
-		db:         cfg.DB.DBQ,
-		jwtService: auth.NewJWTService(cfg),
-		smsClient:  cfg.SmsClient,
+		db:          cfg.DB.DBQ,
+		jwtService:  auth.NewJWTService(cfg),
+		smsService:  cfg.SmsClient,
+		mapsService: maps.NewMapsService(cfg),
 	}
 }
 

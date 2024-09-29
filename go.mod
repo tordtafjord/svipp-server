@@ -13,6 +13,7 @@ require (
 	github.com/pressly/goose/v3 v3.22.0
 	golang.org/x/crypto v0.27.0
 	google.golang.org/api v0.155.0
+	googlemaps.github.io/maps v1.7.0
 )
 
 require (

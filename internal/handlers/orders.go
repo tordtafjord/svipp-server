@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/jackc/pgx/v5/pgtype"
+	"log"
 	"net/http"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
@@ -18,7 +19,7 @@ type orderQuoteRequest struct {
 type orderQuoteResponse struct {
 	PickupAddress   string         `json:"pickupAddress"`
 	DeliveryAddress string         `json:"deliveryAddress"`
-	DistanceMeters  int            `json:"distanceMeters"`
+	DistanceMeters  int32          `json:"distanceMeters"`
 	PriceOptions    map[string]int `json:"priceOptions"`
 	ExpiresAt       time.Time      `json:"expiresAt"`
 }
@@ -52,8 +53,15 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	meters, seconds, err := h.mapsService.GetDistanceAndDuration(r.Context(), params.PickupAddress, params.DeliveryAddress)
+	if err != nil {
+		httputil.InternalServerErrorResponse(w, "Failed to get data from gmaps api %v", err, false)
+		return
+	}
+
+	log.Printf("distance:%v, duration:%v, err:%v", meters, seconds, err)
 	// TODO: Replace with calculation service
-	prices, distance, drivingSeconds := optionPrices, 3782, 60*18+27
+	prices := optionPrices
 
 	priceOptions, err := json.Marshal(prices)
 	if err != nil {
@@ -70,8 +78,8 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 		UserID:         userId,
 		PickupAddr:     params.PickupAddress,
 		DeliveryAddr:   params.DeliveryAddress,
-		DistanceMeters: int32(distance),
-		DrivingSeconds: int32(drivingSeconds),
+		DistanceMeters: meters,
+		DrivingSeconds: seconds,
 		PriceOptions:   priceOptions,
 		ExpiresAt:      expiresTimestamptz,
 	})
@@ -82,7 +90,7 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 	quote := orderQuoteResponse{
 		PickupAddress:   params.PickupAddress,
 		DeliveryAddress: params.DeliveryAddress,
-		DistanceMeters:  distance,
+		DistanceMeters:  meters,
 		PriceOptions:    prices,
 		ExpiresAt:       expires,
 	}

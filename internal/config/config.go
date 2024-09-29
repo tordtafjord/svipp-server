@@ -3,9 +3,10 @@ package config
 import (
 	"context"
 	firebase "firebase.google.com/go"
-	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/api/option"
+	"googlemaps.github.io/maps"
+	"log"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
 	"svipp-server/internal/sms"
@@ -25,7 +26,7 @@ type Config struct {
 		SecretKey []byte
 	}
 	Maps struct {
-		APIKey string
+		Client *maps.Client
 	}
 	Pricing struct {
 		CostPerMin    float64
@@ -44,16 +45,23 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Svipp server running in production: %t\n\n", cfg.IsProd)
+	log.Printf("Svipp server running in production: %t", cfg.IsProd)
 
 	cfg.BaseURL = env.GetString("BASE_URL", "http://localhost:8080")
 	cfg.HTTPPort = env.GetInt("PORT", 8080)
 	cfg.DB.URL = env.GetString("DATABASE_URL", "postgres://svipp@localhost:5432/svipp?sslmode=disable")
 	cfg.DB.Automigrate = env.GetBool("DB_AUTOMIGRATE", true)
 	cfg.JWT.SecretKey = []byte(env.GetString("JWT_SECRET", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q="))
-	cfg.Maps.APIKey = env.GetString("GOOGLE_MAPS_API_KEY", "")
 	cfg.Pricing.PricingFactor = env.GetFloat("REVENUE_FACTOR", 1.2)
 	cfg.Pricing.CostPerMin = env.GetFloat("DRIVER_COST_PER_MIN", 5.0)
+
+	// Maps api client config
+	mapsApiKey := env.GetString("GOOGLE_MAPS_API_KEY", "")
+	mapsClient, err := maps.NewClient(maps.WithAPIKey(mapsApiKey))
+	if err != nil {
+		log.Fatalf("Failed to create google maps client %v", err)
+	}
+	cfg.Maps.Client = mapsClient
 
 	// Twilio sms client config
 	messageServiceSID := env.GetString("TWILIO_MESSAGING_SERVICE_SID", "")
