@@ -22,7 +22,7 @@ const cookieExpiration = 24 * 3600
 const UserClaimsContextKey contextKey = "userClaims"
 
 type CustomClaims struct {
-	UserID string `json:"user_id"`
+	UserID int32  `json:"userId"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
@@ -54,16 +54,12 @@ func (s *JWTService) GenerateJwtCookie(token string) http.Cookie {
 }
 
 func GetUserIdFromContext(ctx context.Context) (int32, error) {
-	claims, ok := ctx.Value(UserClaimsContextKey).(*jwt.MapClaims)
+	claims, ok := ctx.Value(UserClaimsContextKey).(*CustomClaims)
 	if !ok {
 		return 0, errors.New("Failed to get claims from context")
 	}
 
-	if userId, ok := (*claims)["userId"].(float64); ok {
-		return int32(userId), nil
-	}
-
-	return 0, errors.New("Failed to get user id from claims")
+	return claims.UserID, nil
 }
 
 func getRoleFromContext(ctx context.Context) (string, error) {

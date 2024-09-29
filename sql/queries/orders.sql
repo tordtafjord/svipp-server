@@ -6,8 +6,8 @@ INSERT INTO orders (
     pickup_address,
     delivery_address,
     distance,
-    driving_minutes,
-    price
+    driving_seconds,
+    price_cents
 )
 VALUES (
            $1,
@@ -21,59 +21,6 @@ VALUES (
        )
 RETURNING *;
 
--- name: CreateOrderFromTempOrder :one
-WITH temp_data AS (
-    SELECT
-        user_id,
-        pickup_address,
-        delivery_address,
-        distance,
-        driving_minutes,
-        price
-    FROM temp_order
-    WHERE temp_order.id = $1 AND temp_order.user_id = $2
-)
-INSERT INTO orders (
-    user_id,
-    sender_id,
-    recipient_id,
-    pickup_address,
-    delivery_address,
-    distance,
-    driving_minutes,
-    price
-)
-SELECT
-    user_id,
-    user_id,
-    $3,
-    pickup_address,
-    delivery_address,
-    distance,
-    driving_minutes,
-    price
-FROM temp_data
-RETURNING *;
-
-
--- name: CreateTempOrder :one
-INSERT INTO temp_order (
-    user_id,
-    pickup_address,
-    delivery_address,
-    distance,
-    driving_minutes,
-    price
-)
-VALUES (
-           $1,
-           $2,
-           $3,
-           $4,
-           $5,
-           $6
-       )
-RETURNING *;
 
 -- name: GetOrderInfoByPublicId :one
 SELECT
@@ -83,7 +30,7 @@ SELECT
     o.delivery_coords,
     o.status,
     o.distance,
-    o.driving_minutes,
+    o.driving_seconds,
     o.created_at,
     o.confirmed_at,
     o.accepted_at,

@@ -4,7 +4,7 @@ GET https://svipp.app
 > {%
     // Comment out depending on testing production or dev on localhost
     //client.global.set("url", "https://svipp.app");
-    client.global.set("url", "http://localhost:8080");
+    client.global.set("url", "http://localhost:8081");
 %}
 
 ### MAKE SURE TEST USER EXISTS
@@ -31,7 +31,8 @@ Content-Type: application/json
   "phone": "+47{{$random.integer(10000000, 99999999)}}",
   "email": "{{$random.email}}",
   "password": "Password321",
-  "device_token": null
+  "confirmPassword": "Password321",
+  "deviceToken": null
 }
 
 > {%
@@ -48,7 +49,7 @@ Content-Type: application/json
 {
   "email": "test@mail.com",
   "password": "Password3213",
-  "device_token": null
+  "deviceToken": null
 }
 
 > {%
@@ -64,7 +65,7 @@ Content-Type: application/json
 {
   "email": "test@mail.com",
   "password": "Password321",
-  "device_token": null
+  "deviceToken": null
 }
 
 > {%
@@ -93,7 +94,7 @@ Authorization: Bearer {{auth_token}}
 
 > {%
     client.test("Request executed successfully", function () {
-        client.assert(response.status !== 200, "Response status is not 405");
+        client.assert(response.status !== 200, "Response status should not be 200");
     });
 %}
 
@@ -107,6 +108,25 @@ Content-Type: application/json
         client.assert(response.status === 200, "Response status is not 200");
     });
 %}
+
+### Get Order Quote
+POST {{url}}/api/orders/quote
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "pickupAddress": "Dusviksvinger 10C, 4028 Stavanger",
+  "deliveryAddress": "Engøyklubben 30, 4077 Hundvåg"
+}
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 201");
+        //var orderId = response.body.id;
+        //client.global.set("orderId", orderId);
+    });
+%}
+
 
 ### Create Order
 POST {{url}}/api/orders

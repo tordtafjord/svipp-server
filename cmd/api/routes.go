@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"strings"
 	"svipp-server/assets"
 	"svipp-server/internal/handlers"
 	"svipp-server/internal/httputil"
@@ -34,18 +33,18 @@ func (s *server) routes() http.Handler {
 
 	mux.Mount("/", setupWebRoutes(h, jwtMiddleware, s.config.IsProd))
 	mux.Mount("/api", setupApiRoutes(h, jwtMiddleware, s.config.IsProd))
-	mux.Mount("/api/driver", setupDriverRoutes(h, jwtMiddleware, s.config.IsProd))
-	mux.Mount("/api/shopify", setupShopifyRoutes(h, jwtMiddleware, s.config.IsProd))
+	mux.Mount("/api/driver", setupDriverApiRoutes(h, jwtMiddleware, s.config.IsProd))
+	mux.Mount("/api/shopify", setupShopifyApiRoutes(h, jwtMiddleware, s.config.IsProd))
 
 	// Add a catch-all route at the end
 	mux.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		contentType := r.Header.Get("Content-Type")
-		if strings.Contains(contentType, "application/json") {
-			// For JSON requests, return a 404 Not Found
-			httputil.JSONResponse(w, http.StatusNotFound, map[string]string{"error": "Not Found"})
+		if httputil.IsNotJson(r) {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		http.Redirect(w, r, "/", http.StatusFound)
+		// For JSON requests, return a 404 Not Found
+		httputil.JSONResponse(w, http.StatusNotFound, map[string]string{"error": "Not Found"})
+		return
 	})
 
 	return mux
@@ -72,7 +71,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 	return r
 }
 
-func setupShopifyRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Public routes (no authentication required)
@@ -103,6 +102,7 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 		r.Use(jwtMiddleware.CombinedAuthMiddleware)
 		r.Get("/users/me", h.GetMyAccount)
 		r.Post("/orders", h.NewOrder)
+		r.Post("/orders/quote", h.GetOrderQuote)
 		r.Get("/orders/my", h.GetMyOrders)
 		r.Post("/orders/confirm", h.ConfirmOrder)
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +113,7 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 	return r
 }
 
-func setupDriverRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+func setupDriverApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Admin-only routes

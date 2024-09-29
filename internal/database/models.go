@@ -17,27 +17,47 @@ type Driver struct {
 }
 
 type Order struct {
-	ID              int32              `json:"id"`
-	UserID          int32              `json:"userId"`
-	SenderID        int32              `json:"senderId"`
-	RecipientID     int32              `json:"recipientId"`
-	DriverID        *int32             `json:"driverId"`
-	PickupAddress   string             `json:"pickupAddress"`
-	DeliveryAddress string             `json:"deliveryAddress"`
-	Status          string             `json:"status"`
-	Distance        int32              `json:"distance"`
-	DrivingMinutes  float64            `json:"drivingMinutes"`
-	Price           float64            `json:"price"`
-	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
-	ConfirmedAt     pgtype.Timestamptz `json:"confirmedAt"`
-	AcceptedAt      pgtype.Timestamptz `json:"acceptedAt"`
-	PickedUpAt      pgtype.Timestamptz `json:"pickedUpAt"`
-	DeliveredAt     pgtype.Timestamptz `json:"deliveredAt"`
-	UpdatedAt       pgtype.Timestamptz `json:"updatedAt"`
-	CancelledAt     pgtype.Timestamptz `json:"cancelledAt"`
-	PublicID        pgtype.UUID        `json:"publicId"`
-	PickupCoords    interface{}        `json:"pickupCoords"`
-	DeliveryCoords  interface{}        `json:"deliveryCoords"`
+	ID                  int32              `json:"id"`
+	UserID              int32              `json:"userId"`
+	SenderID            int32              `json:"senderId"`
+	RecipientID         int32              `json:"recipientId"`
+	DriverID            *int32             `json:"driverId"`
+	PickupAddress       string             `json:"pickupAddress"`
+	DeliveryAddress     string             `json:"deliveryAddress"`
+	Status              string             `json:"status"`
+	Distance            int32              `json:"distance"`
+	DrivingSeconds      int32              `json:"drivingSeconds"`
+	PriceCents          int32              `json:"priceCents"`
+	CreatedAt           pgtype.Timestamptz `json:"createdAt"`
+	ConfirmedAt         pgtype.Timestamptz `json:"confirmedAt"`
+	AcceptedAt          pgtype.Timestamptz `json:"acceptedAt"`
+	PickedUpAt          pgtype.Timestamptz `json:"pickedUpAt"`
+	DeliveredAt         pgtype.Timestamptz `json:"deliveredAt"`
+	UpdatedAt           pgtype.Timestamptz `json:"updatedAt"`
+	CancelledAt         pgtype.Timestamptz `json:"cancelledAt"`
+	PublicID            pgtype.UUID        `json:"publicId"`
+	PickupCoords        interface{}        `json:"pickupCoords"`
+	DeliveryCoords      interface{}        `json:"deliveryCoords"`
+	DeliveryWindowStart pgtype.Timestamptz `json:"deliveryWindowStart"`
+	DeliveryWindowEnd   pgtype.Timestamptz `json:"deliveryWindowEnd"`
+}
+
+type OrderPriceGuarantee struct {
+	UserID         int32              `json:"userId"`
+	PickupAddr     string             `json:"pickupAddr"`
+	DeliveryAddr   string             `json:"deliveryAddr"`
+	DistanceMeters int32              `json:"distanceMeters"`
+	DrivingSeconds int32              `json:"drivingSeconds"`
+	PriceOptions   []byte             `json:"priceOptions"`
+	CreatedAt      pgtype.Timestamptz `json:"createdAt"`
+	ExpiresAt      pgtype.Timestamptz `json:"expiresAt"`
+}
+
+type PhoneAuth struct {
+	Phone     string             `json:"phone"`
+	AuthCode  *string            `json:"authCode"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
 }
 
 type Rating struct {
@@ -54,17 +74,6 @@ type ShopifyRequest struct {
 	ID        int32              `json:"id"`
 	RawJson   []byte             `json:"rawJson"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
-}
-
-type TempOrder struct {
-	ID              int32              `json:"id"`
-	UserID          int32              `json:"userId"`
-	PickupAddress   string             `json:"pickupAddress"`
-	DeliveryAddress string             `json:"deliveryAddress"`
-	Distance        *int32             `json:"distance"`
-	DrivingMinutes  *float64           `json:"drivingMinutes"`
-	Price           *float64           `json:"price"`
-	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
 }
 
 type User struct {
