@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v4"
+	"log"
 	"net/http"
 	"svipp-server/internal/config"
+	"svipp-server/internal/models"
 	"time"
 )
 
@@ -62,6 +64,28 @@ func GetUserIdFromContext(ctx context.Context) (int32, error) {
 	}
 
 	return 0, errors.New("Failed to get user id from claims")
+}
+
+func getRoleFromContext(ctx context.Context) (string, error) {
+	claims, ok := ctx.Value(UserClaimsContextKey).(*jwt.MapClaims)
+	if !ok {
+		return "", errors.New("Failed to get claims from context")
+	}
+
+	if role, ok := (*claims)["role"].(string); ok {
+		return role, nil
+	}
+
+	return "", errors.New("Failed to get role from claims")
+}
+
+func IsUserRole(ctx context.Context) bool {
+	role, err := getRoleFromContext(ctx)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return role == models.RoleUser.String()
 }
 
 func (s *JWTService) IsAuthenticated(r http.Request) bool {

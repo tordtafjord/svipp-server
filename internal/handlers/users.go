@@ -22,7 +22,7 @@ type createUserRequest struct {
 
 func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) {
 	var params createUserRequest
-	isHtmx := httputil.IsJson(request)
+	isHtmx := httputil.IsNotJson(request)
 
 	// Parse the signup request body
 	if !isHtmx {

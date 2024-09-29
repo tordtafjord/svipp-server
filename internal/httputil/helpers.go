@@ -9,7 +9,7 @@ type contextKey string
 
 const IsJsonContextKey contextKey = "isJson"
 
-func IsJson(r *http.Request) bool {
+func IsNotJson(r *http.Request) bool {
 	return r.Header.Get("Content-Type") != "application/json"
 }
 
