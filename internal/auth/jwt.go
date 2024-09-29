@@ -17,7 +17,8 @@ type JWTService struct {
 // New type for context key
 type contextKey string
 
-const cookieExpiration = 24 * 3600
+const cookieExpirationSeconds = 3600 * 24
+const cookieExpiration = time.Second * 3600 * 24
 const UserClaimsContextKey contextKey = "userClaims"
 const IsJsonContextKey contextKey = "isJson"
 
@@ -58,7 +59,7 @@ func (s *JWTService) GenerateJWT(userId int32, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"userId": userId,
 		"role":   role,
-		"exp":    time.Now().Add(time.Second * cookieExpiration).Unix(),
+		"exp":    time.Now().Add(cookieExpiration).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(*s.jwtSecret)
@@ -72,7 +73,7 @@ func (s *JWTService) GenerateJwtCookie(token string) http.Cookie {
 		HttpOnly: true,
 		Secure:   true, // Set to true if using HTTPS
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   cookieExpiration, // Set the expiration time in seconds (e.g., 1 hour)
+		MaxAge:   cookieExpirationSeconds, // Set the expiration time in seconds (e.g., 1 hour)
 	}
 }
 
