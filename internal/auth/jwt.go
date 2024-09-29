@@ -19,6 +19,7 @@ type contextKey string
 
 const cookieExpiration = 24 * 3600
 const UserClaimsContextKey contextKey = "userClaims"
+const IsJsonContextKey contextKey = "isJson"
 
 type CustomClaims struct {
 	UserID int32  `json:"userId"`
@@ -26,8 +27,31 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(secret *[]byte) *JWTService {
-	return &JWTService{jwtSecret: secret}
+func NewJWTService(secretStr string) *JWTService {
+	secret := []byte(secretStr)
+	return &JWTService{jwtSecret: &secret}
+}
+
+func (s *JWTService) ValidateToken(tokenString string) (*jwt.Token, bool) {
+	claims := &CustomClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Added signing method check
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return *s.jwtSecret, nil
+	})
+	if err != nil {
+		log.Printf("Failed to parse token with claims %v", err)
+		return nil, false
+	}
+
+	if !token.Valid {
+		return nil, false
+	}
+
+	return token, true
 }
 
 func (s *JWTService) GenerateJWT(userId int32, role string) (string, error) {

@@ -17,7 +17,7 @@ import (
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
 	h := handlers.NewHandler(s.services)
-	jwtMiddleware := NewJWTAuthMiddleware(s.config.JwtSecret)
+	jwtMiddleware := NewJWTAuthMiddleware(s.services.JwtService)
 
 	setupBaseMiddlewares(mux)
 	setupStaticServing(mux)

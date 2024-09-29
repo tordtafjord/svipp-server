@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
-	"github.com/golang-jwt/jwt/v4"
 	"log"
 	"net/http"
 	"svipp-server/internal/auth"
@@ -13,11 +11,11 @@ import (
 )
 
 type JWTAuthMiddleware struct {
-	secretKey []byte
+	jwtService *auth.JWTService
 }
 
-func NewJWTAuthMiddleware(secretKey []byte) *JWTAuthMiddleware {
-	return &JWTAuthMiddleware{secretKey: secretKey}
+func NewJWTAuthMiddleware(jwtService *auth.JWTService) *JWTAuthMiddleware {
+	return &JWTAuthMiddleware{jwtService: jwtService}
 }
 
 func (m *JWTAuthMiddleware) CombinedAuthMiddleware(next http.Handler) http.Handler {
@@ -42,28 +40,15 @@ func (m *JWTAuthMiddleware) JwtAuthMiddleware(next http.Handler) http.Handler {
 		const bearerPrefix = "Bearer "
 		if len(authHeader) > len(bearerPrefix) && subtle.ConstantTimeCompare([]byte(authHeader[:len(bearerPrefix)]), []byte(bearerPrefix)) == 1 {
 			tokenString := authHeader[len(bearerPrefix):]
-			claims := &auth.CustomClaims{} // Changed to CustomClaims
 
-			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-				// Added signing method check
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, errors.New("unexpected signing method")
-				}
-				return m.secretKey, nil
-			})
-
-			if err != nil {
+			token, ok := m.jwtService.ValidateToken(tokenString)
+			if !ok {
 				httputil.UnauthorizedResponse(w)
 				return
 			}
 
-			if !token.Valid {
-				httputil.UnauthorizedResponse(w)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, claims)
-			ctx = context.WithValue(ctx, httputil.IsJsonContextKey, true) // Added isJson context
+			ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, token.Claims)
+			ctx = context.WithValue(ctx, auth.IsJsonContextKey, true)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			httputil.UnauthorizedResponse(w)
@@ -81,30 +66,16 @@ func (m *JWTAuthMiddleware) JwtCookieAuthMiddleware(next http.Handler) http.Hand
 			return
 		}
 
-		claims := &auth.CustomClaims{} // Changed to CustomClaims
 		tokenString := cookie.Value
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			// Added signing method check
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.New("unexpected signing method")
-			}
-			return m.secretKey, nil
-		})
-		if err != nil {
-			log.Printf("Failed parsing jwt with claims %v", err)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		if !token.Valid {
+		token, ok := m.jwtService.ValidateToken(tokenString)
+		if !ok {
 			log.Printf("Token not valid %v", token.Claims)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, claims) // Changed context key
-		ctx = context.WithValue(ctx, httputil.IsJsonContextKey, false)           // Added isJson context
+		ctx := context.WithValue(r.Context(), auth.UserClaimsContextKey, token.Claims) // Changed context key
+		ctx = context.WithValue(ctx, auth.IsJsonContextKey, false)                     // Added isJson context
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

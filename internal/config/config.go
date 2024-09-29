@@ -26,9 +26,8 @@ type Services struct {
 }
 
 type Config struct {
-	HTTPPort  int
-	JwtSecret []byte
-	IsProd    bool
+	HTTPPort int
+	IsProd   bool
 }
 
 func New() (*Config, *Services, error) {
@@ -55,7 +54,6 @@ func loadConfig() (*Config, error) {
 		return nil, err
 	}
 	cfg.HTTPPort = env.GetInt("PORT", 8080)
-	cfg.JwtSecret = []byte(env.GetString("JWT_SECRET", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q="))
 
 	return cfg, nil
 }
@@ -63,7 +61,7 @@ func loadConfig() (*Config, error) {
 func InitializeServices(cfg *Config) (*Services, error) {
 	services := &Services{}
 
-	services.JwtService = auth.NewJWTService(&cfg.JwtSecret)
+	services.JwtService = auth.NewJWTService(env.GetString("JWT_SECRET", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q="))
 
 	// Initialize Maps client
 	mapsClient, err := gmaps.NewClient(gmaps.WithAPIKey(env.GetString("GOOGLE_MAPS_API_KEY", "")))
