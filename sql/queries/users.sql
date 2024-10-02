@@ -14,15 +14,7 @@ WHERE id = $1;
 -- name: GetOrCreateTempUser :one
 INSERT INTO users (phone, name, email, temporary)
 VALUES ($1, $2, $3, true)
-ON CONFLICT (phone) DO UPDATE
-SET name = CASE 
-        WHEN users.temporary THEN $2
-        ELSE users.name
-    END,
-    email = CASE 
-        WHEN users.temporary THEN $3
-        ELSE users.email
-    END
+ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone
 RETURNING id, name, phone, email, role, device_token;
 
 

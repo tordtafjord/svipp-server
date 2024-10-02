@@ -61,7 +61,8 @@ INSERT INTO orders (
     delivery_address,
     distance,
     driving_seconds,
-    price_cents
+    price_cents,
+    status
 )
 VALUES (
            $1,
@@ -71,9 +72,10 @@ VALUES (
            $5,
            $6,
            $7,
-           $8
+           $8,
+           $9
        )
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_seconds, price_cents, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords, delivery_window_start, delivery_window_end
+RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id
 `
 
 type CreateOrderParams struct {
@@ -85,9 +87,19 @@ type CreateOrderParams struct {
 	Distance        int32  `json:"distance"`
 	DrivingSeconds  int32  `json:"drivingSeconds"`
 	PriceCents      int32  `json:"priceCents"`
+	Status          string `json:"status"`
 }
 
-func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
+type CreateOrderRow struct {
+	PickupAddress   string      `json:"pickupAddress"`
+	DeliveryAddress string      `json:"deliveryAddress"`
+	Distance        int32       `json:"distance"`
+	PriceCents      int32       `json:"priceCents"`
+	Status          string      `json:"status"`
+	PublicID        pgtype.UUID `json:"publicId"`
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (CreateOrderRow, error) {
 	row := q.db.QueryRow(ctx, createOrder,
 		arg.UserID,
 		arg.SenderID,
@@ -97,32 +109,16 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.Distance,
 		arg.DrivingSeconds,
 		arg.PriceCents,
+		arg.Status,
 	)
-	var i Order
+	var i CreateOrderRow
 	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.SenderID,
-		&i.RecipientID,
-		&i.DriverID,
 		&i.PickupAddress,
 		&i.DeliveryAddress,
-		&i.Status,
 		&i.Distance,
-		&i.DrivingSeconds,
 		&i.PriceCents,
-		&i.CreatedAt,
-		&i.ConfirmedAt,
-		&i.AcceptedAt,
-		&i.PickedUpAt,
-		&i.DeliveredAt,
-		&i.UpdatedAt,
-		&i.CancelledAt,
+		&i.Status,
 		&i.PublicID,
-		&i.PickupCoords,
-		&i.DeliveryCoords,
-		&i.DeliveryWindowStart,
-		&i.DeliveryWindowEnd,
 	)
 	return i, err
 }

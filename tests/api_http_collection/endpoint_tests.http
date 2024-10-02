@@ -121,9 +121,17 @@ Authorization: Bearer {{auth_token}}
 
 > {%
     client.test("Request executed successfully", function () {
-        client.assert(response.status === 200, "Response status is not 201");
-        //var orderId = response.body.id;
-        //client.global.set("orderId", orderId);
+        client.assert(response.status === 200, "Response status is not 200");
+        var pickupAddress = response.body.pickupAddress;
+        var deliveryAddress = response.body.deliveryAddress;
+        var priceOptions = response.body.priceOptions.Prices;
+
+        // Extract the first key from priceOptions
+        var priceOption = Object.keys(priceOptions)[0];
+
+        client.global.set("pickupAddress", pickupAddress);
+        client.global.set("deliveryAddress", deliveryAddress);
+        client.global.set("priceOption", priceOption);
     });
 %}
 
@@ -134,10 +142,12 @@ Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
-  "pickup_address_id": 19135,
-  "delivery_address_id": 20842,
-  "pickup_address": "Dusviksvinger 10C, 4028 Stavanger",
-  "delivery_address": "Engøyklubben 30, 4077 Hundvåg"
+  "pickupAddress": "{{pickupAddress}}",
+  "deliveryAddress": "{{deliveryAddress}}",
+  "priceOption": "{{priceOption}}",
+  "isSender": true,
+  "phone" : "+4741290110"
+
 }
 
 > {%

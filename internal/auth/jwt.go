@@ -77,6 +77,15 @@ func (s *JWTService) GenerateJwtCookie(token string) http.Cookie {
 	}
 }
 
+func GetUserClaimsFromContext(ctx context.Context) (*CustomClaims, error) {
+	claims, ok := ctx.Value(UserClaimsContextKey).(*CustomClaims)
+	if !ok {
+		return nil, errors.New("Failed to get claims from context")
+	}
+
+	return claims, nil
+}
+
 func GetUserIdFromContext(ctx context.Context) (int32, error) {
 	claims, ok := ctx.Value(UserClaimsContextKey).(*CustomClaims)
 	if !ok {

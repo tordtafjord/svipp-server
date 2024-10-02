@@ -7,7 +7,8 @@ INSERT INTO orders (
     delivery_address,
     distance,
     driving_seconds,
-    price_cents
+    price_cents,
+    status
 )
 VALUES (
            $1,
@@ -17,9 +18,10 @@ VALUES (
            $5,
            $6,
            $7,
-           $8
+           $8,
+           $9
        )
-RETURNING *;
+RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id;
 
 
 -- name: GetOrderInfoByPublicId :one

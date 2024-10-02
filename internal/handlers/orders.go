@@ -2,14 +2,20 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"log"
 	"net/http"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
+	"svipp-server/internal/models"
 	"time"
 )
+
+// Real expiration time 15.5 min, shown to customers 15min:
+const quoteExpirationDuration = 15*time.Minute + 30*time.Second
 
 type orderQuoteRequest struct {
 	PickupAddress   string `json:"pickupAddress" validate:"required"`
@@ -17,21 +23,30 @@ type orderQuoteRequest struct {
 }
 
 type orderQuoteResponse struct {
-	PickupAddress   string         `json:"pickupAddress"`
-	DeliveryAddress string         `json:"deliveryAddress"`
-	DistanceMeters  int32          `json:"distanceMeters"`
-	PriceOptions    map[string]int `json:"priceOptions"`
-	ExpiresAt       time.Time      `json:"expiresAt"`
+	PickupAddress   string      `json:"pickupAddress"`
+	DeliveryAddress string      `json:"deliveryAddress"`
+	DistanceMeters  int32       `json:"distanceMeters"`
+	PriceOptions    QuotePrices `json:"priceOptions"`
+	ExpiresAt       time.Time   `json:"expiresAt"`
 }
 
-var optionPrices = map[string]int{
-	"express":  15000,
-	"today":    12500,
-	"tomorrow": 10000,
-	"later":    10000,
+type newOrderRequest struct {
+	PickupAddress   string `json:"pickupAddress" validate:"required"`
+	DeliveryAddress string `json:"deliveryAddress" validate:"required"`
+	Phone           string `json:"phone" validate:"required,e164"`
+	PriceOption     string `json:"priceOption" validate:"required"`
+	IsSender        bool   `json:"isSender" validate:"required"`
 }
 
-const quoteExpirationDuration = 15 * time.Minute
+type QuotePrices struct {
+	Prices map[string]int32
+}
+
+func NewQuotePrices() QuotePrices {
+	return QuotePrices{
+		Prices: make(map[string]int32),
+	}
+}
 
 // Get delivery cost, prices locked and guaranteed for 15 minuted
 func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +76,11 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("distance:%v, duration:%v, err:%v", meters, seconds, err)
 	// TODO: Replace with calculation service
-	prices := optionPrices
+	prices := NewQuotePrices()
+	prices.Prices["express"] = 15000
+	prices.Prices["today"] = 12500
+	prices.Prices["tomorrow"] = 10000
+	prices.Prices["later"] = 10000
 
 	priceOptions, err := json.Marshal(prices)
 	if err != nil {
@@ -92,20 +111,111 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 		DeliveryAddress: params.DeliveryAddress,
 		DistanceMeters:  meters,
 		PriceOptions:    prices,
-		ExpiresAt:       expires,
+		ExpiresAt:       expires.Add(-30 * time.Second),
 	}
 	httputil.JSONResponse(w, http.StatusOK, quote)
 }
 
-// handlerNewOrder handles the creation of a new order
+// handlerNewOrder handles the creation of a new order from a quote
 func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement order creation logic
-	// 1. Parse request body
-	// 2. Validate input
-	// 3. Create order in database
-	// 4. Return response
+	ctx := r.Context()
+	userClaims, err := auth.GetUserClaimsFromContext(ctx)
+	if err != nil {
+		httputil.InternalServerErrorResponse(w, "Failed to retrieve claims of user %v", err, false)
+		return
+	}
 
-	httputil.JSONResponse(w, http.StatusCreated, map[string]string{"message": "Order created successfully"})
+	var params newOrderRequest
+	// Parse and validate the JSON request body
+	if err = json.NewDecoder(r.Body).Decode(&params); err != nil {
+		httputil.BadRequestResponse(w, err, false)
+		return
+	}
+	if validationErrors := validateStruct(params); validationErrors != nil {
+		httputil.ValidationFailedResponse(w, validationErrors, false)
+		return
+	}
+
+	orderQuote, err := h.db.GetOrderQuote(ctx, database.GetOrderQuoteParams{
+		UserID:       userClaims.UserID,
+		PickupAddr:   params.PickupAddress,
+		DeliveryAddr: params.DeliveryAddress,
+	})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Order quote not found or expired
+			httputil.JSONResponse(w, http.StatusGone, map[string]string{
+				"error":   "Order quote has expired or not found",
+				"message": "Please request a new quote",
+			})
+		} else {
+			httputil.InternalServerErrorResponse(w, "Failed to query db for orderQuote", err, false)
+		}
+		return
+	}
+
+	otherUser, err := h.db.GetOrCreateTempUser(ctx, database.GetOrCreateTempUserParams{
+		Phone: params.Phone,
+		Name:  nil,
+		Email: nil,
+	})
+	if err != nil {
+		httputil.InternalServerErrorResponse(w, "Failed to GetOrCreateTempUser", err, false)
+		return
+	}
+
+	// Parse stored quotePrices
+	var quotePrices QuotePrices
+	if err = json.Unmarshal(orderQuote.PriceOptions, &quotePrices); err != nil {
+		httputil.BadRequestResponse(w, err, false)
+		return
+	}
+	price, exists := quotePrices.Prices[params.PriceOption]
+	if !exists {
+		msg := fmt.Sprintf("Chosen price option %v does not exits in %v", params.PriceOption, quotePrices.Prices)
+		httputil.ErrorResponse(w, http.StatusBadRequest, msg, msg, false)
+		return
+	}
+
+	var recipientId, senderId int32
+	var status string
+	if userClaims.Role != models.RoleMerchant.String() {
+		// If user is not from a webshop or merchant order
+		if params.IsSender {
+			recipientId = otherUser.ID
+			senderId = userClaims.UserID
+		} else {
+			recipientId = userClaims.UserID
+			senderId = otherUser.ID
+		}
+		status = models.Pending.String()
+	} else {
+		// Web shop or merchant order
+		recipientId = otherUser.ID
+		senderId = userClaims.UserID
+		status = models.Confirmed.String()
+	}
+
+	// Set price from price options
+	newOrder, err := h.db.CreateOrder(ctx, database.CreateOrderParams{
+		UserID:          userClaims.UserID,
+		SenderID:        senderId,
+		RecipientID:     recipientId,
+		PickupAddress:   orderQuote.PickupAddr,
+		DeliveryAddress: orderQuote.DeliveryAddr,
+		Distance:        orderQuote.DistanceMeters,
+		DrivingSeconds:  orderQuote.DrivingSeconds,
+		PriceCents:      price,
+		Status:          status,
+	})
+	if err != nil {
+		httputil.InternalServerErrorResponse(w, "Failed to create new order", err, false)
+		return
+	}
+
+	// TODO Notify user sms with order url
+
+	httputil.JSONResponse(w, http.StatusCreated, newOrder)
 }
 
 // handlerGetMyOrders retrieves orders for the authenticated user

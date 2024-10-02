@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getOrderQuote = `-- name: GetOrderQuote :one
+SELECT
+    pickup_addr,
+    delivery_addr,
+    distance_meters,
+    driving_seconds,
+    price_options
+FROM order_price_guarantees
+WHERE
+    user_id = $1 AND
+    pickup_addr = $2 AND
+    delivery_addr = $3 AND
+    expires_at > NOW()
+`
+
+type GetOrderQuoteParams struct {
+	UserID       int32  `json:"userId"`
+	PickupAddr   string `json:"pickupAddr"`
+	DeliveryAddr string `json:"deliveryAddr"`
+}
+
+type GetOrderQuoteRow struct {
+	PickupAddr     string `json:"pickupAddr"`
+	DeliveryAddr   string `json:"deliveryAddr"`
+	DistanceMeters int32  `json:"distanceMeters"`
+	DrivingSeconds int32  `json:"drivingSeconds"`
+	PriceOptions   []byte `json:"priceOptions"`
+}
+
+func (q *Queries) GetOrderQuote(ctx context.Context, arg GetOrderQuoteParams) (GetOrderQuoteRow, error) {
+	row := q.db.QueryRow(ctx, getOrderQuote, arg.UserID, arg.PickupAddr, arg.DeliveryAddr)
+	var i GetOrderQuoteRow
+	err := row.Scan(
+		&i.PickupAddr,
+		&i.DeliveryAddr,
+		&i.DistanceMeters,
+		&i.DrivingSeconds,
+		&i.PriceOptions,
+	)
+	return i, err
+}
+
 const upsertQuote = `-- name: UpsertQuote :exec
 INSERT INTO order_price_guarantees (
     user_id,
