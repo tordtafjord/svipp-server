@@ -13,18 +13,26 @@ type TwilioClient struct {
 	accountSID          string
 	authToken           string
 	messagingServiceSid string
+	isProd              bool
 }
 
-func NewTwilioClient(accountSID, authToken, messagingServiceSid string) *TwilioClient {
+func NewTwilioClient(accountSID, authToken, messagingServiceSid string, isProd bool) *TwilioClient {
 	return &TwilioClient{
 		accountSID:          accountSID,
 		authToken:           authToken,
 		messagingServiceSid: messagingServiceSid,
+		isProd:              isProd,
 	}
 }
 
 func (c *TwilioClient) SendSMSAsync(to, message string) {
 	go func() {
+		// is c.isProd when ready for prod
+		if true {
+			log.Printf("SMS to %s with message: %s", to, message)
+			return
+		}
+
 		err := c.SendSMS(to, message)
 		if err != nil {
 			// Handle error, perhaps log it

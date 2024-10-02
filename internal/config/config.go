@@ -75,6 +75,7 @@ func InitializeServices(cfg *Config) (*Services, error) {
 		env.GetString("TWILIO_ACCOUNT_SID", ""),
 		env.GetString("TWILIO_AUTH_TOKEN", ""),
 		env.GetString("TWILIO_MESSAGING_SERVICE_SID", ""),
+		cfg.IsProd,
 	)
 
 	// Initialize Firebase

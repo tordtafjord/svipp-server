@@ -212,8 +212,8 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO Notify user sms with order url
-	//msg := fmt.Sprintf("Pakke på vei til deg. https://svipp.app/orders/%s", newOrder.PublicID)
-	//h.smsService.SendSMSAsync(otherUser.Phone, "test")
+	msg := fmt.Sprintf("Pakke på vei til deg. https://svipp.app/orders/%s", newOrder.PublicID)
+	h.smsService.SendSMSAsync(otherUser.Phone, msg)
 
 	httputil.JSONResponse(w, http.StatusCreated, newOrder)
 }
