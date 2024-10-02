@@ -75,7 +75,7 @@ VALUES (
            $8,
            $9
        )
-RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id
+RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id::text
 `
 
 type CreateOrderParams struct {
@@ -91,12 +91,12 @@ type CreateOrderParams struct {
 }
 
 type CreateOrderRow struct {
-	PickupAddress   string      `json:"pickupAddress"`
-	DeliveryAddress string      `json:"deliveryAddress"`
-	Distance        int32       `json:"distance"`
-	PriceCents      int32       `json:"priceCents"`
-	Status          string      `json:"status"`
-	PublicID        pgtype.UUID `json:"publicId"`
+	PickupAddress   string `json:"pickupAddress"`
+	DeliveryAddress string `json:"deliveryAddress"`
+	Distance        int32  `json:"distance"`
+	PriceCents      int32  `json:"priceCents"`
+	Status          string `json:"status"`
+	PublicID        string `json:"publicId"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (CreateOrderRow, error) {

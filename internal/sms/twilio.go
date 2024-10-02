@@ -57,6 +57,7 @@ func (c *TwilioClient) SendSMS(to, message string) error {
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&data)
 	if err != nil {
+		log.Printf("Error decoding %v", data)
 		return err
 	}
 

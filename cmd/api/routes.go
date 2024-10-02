@@ -73,6 +73,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 
 func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(LogRequestBody)
 
 	// Public routes (no authentication required)
 	r.Post("/callback", h.ShopifyCallback)
@@ -99,6 +100,7 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 	})
 
 	r.Group(func(r chi.Router) {
+		r.Use(LogRequestBody)
 		r.Use(jwtMiddleware.CombinedAuthMiddleware)
 		r.Get("/users/me", h.GetMyAccount)
 		r.Post("/orders", h.NewOrder)
@@ -126,7 +128,7 @@ func setupDriverApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware,
 
 	// Driver and admin routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver, models.RoleAdmin))
+		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver, models.RoleAdmin), LogRequestBody)
 
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

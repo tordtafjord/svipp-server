@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/subtle"
+	"io"
 	"log"
 	"net/http"
 	"svipp-server/internal/auth"
@@ -102,4 +104,23 @@ func RequireRole(allowedRoles ...models.Role) func(http.Handler) http.Handler {
 			return
 		})
 	}
+}
+
+func LogRequestBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Read the body
+		var bodyBytes []byte
+		if r.Body != nil {
+			bodyBytes, _ = io.ReadAll(r.Body)
+		}
+
+		// Restore the io.ReadCloser to its original state
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		// Use the body content
+		log.Printf("Endpoint: %s, Request body: %s", r.URL.Path, bodyBytes)
+
+		// Call the next handler
+		next.ServeHTTP(w, r)
+	})
 }

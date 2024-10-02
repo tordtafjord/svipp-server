@@ -21,7 +21,7 @@ VALUES (
            $8,
            $9
        )
-RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id;
+RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id::text;
 
 
 -- name: GetOrderInfoByPublicId :one

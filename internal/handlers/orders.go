@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"log"
 	"net/http"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
@@ -74,7 +73,6 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("distance:%v, duration:%v, err:%v", meters, seconds, err)
 	// TODO: Replace with calculation service
 	prices := NewQuotePrices()
 	prices.Prices["express"] = 15000
@@ -214,6 +212,8 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO Notify user sms with order url
+	//msg := fmt.Sprintf("Pakke på vei til deg. https://svipp.app/orders/%s", newOrder.PublicID)
+	//h.smsService.SendSMSAsync(otherUser.Phone, "test")
 
 	httputil.JSONResponse(w, http.StatusCreated, newOrder)
 }
