@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"svipp-server/internal/httputil"
+	"svipp-server/internal/models"
 	"time"
 )
 
@@ -54,14 +55,14 @@ type Item struct {
 }
 
 type ShopifyRate struct {
-	ServiceName     string  `json:"service_name"`
-	Description     string  `json:"description"`
-	ServiceCode     string  `json:"service_code"`
-	Currency        string  `json:"currency"`
-	TotalPrice      int64   `json:"total_price"`
-	PhoneRequired   bool    `json:"phone_required" default:"true"`
-	MinDeliveryDate *string `json:"min_delivery_date,omitempty"`
-	MaxDeliveryDate *string `json:"max_delivery_date,omitempty"`
+	ServiceName     string                `json:"service_name"`
+	Description     string                `json:"description"`
+	ServiceCode     models.DeliveryOption `json:"service_code"`
+	Currency        string                `json:"currency"`
+	TotalPrice      int64                 `json:"total_price"`
+	PhoneRequired   bool                  `json:"phone_required" default:"true"`
+	MinDeliveryDate *string               `json:"min_delivery_date,omitempty"`
+	MaxDeliveryDate *string               `json:"max_delivery_date,omitempty"`
 }
 
 type ShopifyRates struct {
@@ -99,11 +100,31 @@ func (h *Handler) ShopifyCallback(w http.ResponseWriter, r *http.Request) {
 	// Create a slice of ShopifyRate
 	rates := []ShopifyRate{
 		{
-			ServiceName:     "Ekspress Levering",
-			Description:     "Hentes snartest mulig av vårt leveringsbud",
-			ServiceCode:     "express",
+			ServiceName:     "Nå",
+			Description:     "Leveres snartest mulig av vårt leveringsbud",
+			ServiceCode:     models.Express,
 			Currency:        "NOK",
 			TotalPrice:      15000,
+			PhoneRequired:   true,
+			MinDeliveryDate: &currentTimeString,
+			MaxDeliveryDate: &maxTimeString,
+		},
+		{
+			ServiceName:     "I dag",
+			Description:     "Leveres i løpet av dagen fra vårt leveringsbud",
+			ServiceCode:     models.Today,
+			Currency:        "NOK",
+			TotalPrice:      12500,
+			PhoneRequired:   true,
+			MinDeliveryDate: &currentTimeString,
+			MaxDeliveryDate: &maxTimeString,
+		},
+		{
+			ServiceName:     "Senere",
+			Description:     "Leveres innen 1-3 dager av vårt leveringsbud",
+			ServiceCode:     models.Later,
+			Currency:        "NOK",
+			TotalPrice:      10000,
 			PhoneRequired:   true,
 			MinDeliveryDate: &currentTimeString,
 			MaxDeliveryDate: &maxTimeString,

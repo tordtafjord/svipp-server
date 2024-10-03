@@ -38,12 +38,12 @@ type newOrderRequest struct {
 }
 
 type QuotePrices struct {
-	Prices map[string]int32
+	Prices map[models.DeliveryOption]int32
 }
 
 func NewQuotePrices() QuotePrices {
 	return QuotePrices{
-		Prices: make(map[string]int32),
+		Prices: make(map[models.DeliveryOption]int32),
 	}
 }
 
@@ -75,10 +75,10 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Replace with calculation service
 	prices := NewQuotePrices()
-	prices.Prices["express"] = 15000
-	prices.Prices["today"] = 12500
-	prices.Prices["tomorrow"] = 10000
-	prices.Prices["later"] = 10000
+	prices.Prices[models.Express] = 15000
+	prices.Prices[models.Today] = 12500
+	prices.Prices[models.Tomorrow] = 10000
+	prices.Prices[models.Later] = 10000
 
 	priceOptions, err := json.Marshal(prices)
 	if err != nil {
@@ -168,7 +168,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 		httputil.BadRequestResponse(w, err, false)
 		return
 	}
-	price, exists := quotePrices.Prices[params.PriceOption]
+	price, exists := quotePrices.Prices[models.DeliveryOption(params.PriceOption)]
 	if !exists {
 		msg := fmt.Sprintf("Chosen price option %v does not exits in %v", params.PriceOption, quotePrices.Prices)
 		httputil.ErrorResponse(w, http.StatusBadRequest, msg, msg, false)

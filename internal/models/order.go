@@ -15,3 +15,16 @@ const (
 func (r OrderStatus) String() string {
 	return string(r)
 }
+
+type DeliveryOption string
+
+const (
+	Express  DeliveryOption = "express"
+	Today    DeliveryOption = "today"
+	Tomorrow DeliveryOption = "tomorrow"
+	Later    DeliveryOption = "later"
+)
+
+func (r DeliveryOption) String() string {
+	return string(r)
+}
