@@ -44,4 +44,4 @@ npm run build-css
 ## DB code generation
 ```
 sqlc generate
-```
+``` 
