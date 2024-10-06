@@ -77,6 +77,8 @@ func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware
 
 	// Public routes (no authentication required)
 	r.Post("/callback", h.ShopifyCallback)
+	r.Post("/fulfillment-service/fulfillment_order_notification", h.ShopifyCallback)
+	r.Post("/fulfillment-service/fetch_tracking_numbers", h.ShopifyCallback)
 	//r.Post("/webhook", h.ShopifyWebhook)
 
 	// Add any authenticated routes here if needed
