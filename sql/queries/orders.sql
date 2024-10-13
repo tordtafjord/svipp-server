@@ -5,7 +5,7 @@ INSERT INTO orders (
     recipient_id,
     pickup_address,
     delivery_address,
-    distance,
+    distance_meters,
     driving_seconds,
     price_cents,
     status
@@ -21,7 +21,7 @@ VALUES (
            $8,
            $9
        )
-RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id::text;
+RETURNING pickup_address, delivery_address, distance_meters, price_cents, status, public_id::text;
 
 
 -- name: GetOrderInfoByPublicId :one
@@ -31,7 +31,7 @@ SELECT
     o.delivery_address,
     o.delivery_coords,
     o.status,
-    o.distance,
+    o.distance_meters,
     o.driving_seconds,
     o.created_at,
     o.confirmed_at,
@@ -39,9 +39,9 @@ SELECT
     o.picked_up_at,
     o.delivered_at,
     o.cancelled_at,
-    sender.name AS sender_name,
+    sender.first_name AS sender_name,
     -- Add more sender columns as needed
-    driver.name AS driver_name,
+    driver.first_name AS driver_name,
     driver.rates AS driver_rates,
     driver.rate_total AS driver_rate_total
 -- Add more receiver columns as needed

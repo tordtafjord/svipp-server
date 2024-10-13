@@ -1,21 +1,21 @@
 -- name: CreateUser :one
-INSERT INTO users (name, phone, email, password, device_token, temporary, role)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, name, phone, email, role;
+INSERT INTO users (first_name, last_name, phone, email, password, device_token, temporary, role)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, first_name, last_name, phone, email, role;
 
 
 -- name: GetUserBasicInfoById :one
-SELECT id, name, phone, email
+SELECT id, first_name, last_name, phone, email
 FROM users
 WHERE id = $1;
 
 
 
 -- name: GetOrCreateTempUser :one
-INSERT INTO users (phone, name, email, temporary)
-VALUES ($1, $2, $3, true)
+INSERT INTO users (phone, first_name, last_name, email, temporary)
+VALUES ($1, $2, $3, $4, true)
 ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone
-RETURNING id, name, phone, email, role, device_token;
+RETURNING id, first_name, last_name, phone, email, role, device_token;
 
 
 

@@ -1,8 +1,8 @@
 -- name: UpsertQuote :exec
-INSERT INTO order_price_guarantees (
+INSERT INTO order_quote(
     user_id,
-    pickup_addr,
-    delivery_addr,
+    pickup_address,
+    delivery_address,
     distance_meters,
     driving_seconds,
     price_options,
@@ -31,9 +31,9 @@ SELECT
     distance_meters,
     driving_seconds,
     price_options
-FROM order_price_guarantees
+FROM order_quote
 WHERE
     user_id = $1 AND
-    pickup_addr = $2 AND
-    delivery_addr = $3 AND
+    pickup_address = $2 AND
+    delivery_address = $3 AND
     expires_at > NOW();

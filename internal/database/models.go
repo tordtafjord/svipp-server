@@ -76,6 +76,14 @@ type ShopifyRequest struct {
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 }
 
+type Token struct {
+	Token     string             `json:"token"`
+	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	UserID    int32              `json:"userId"`
+	Role      string             `json:"role"`
+}
+
 type User struct {
 	ID          int32              `json:"id"`
 	Name        *string            `json:"name"`
