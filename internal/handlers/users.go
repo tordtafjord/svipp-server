@@ -55,9 +55,11 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	user, err := h.db.CreateUser(request.Context(), database.CreateUserParams{
-		Name:        params.Name,
-		Phone:       params.Phone,
+	ctx := request.Context()
+	user, err := h.db.CreateUser(ctx, database.CreateUserParams{
+		FirstName:   params.Name,
+		LastName:    nil,
+		Phone:       &params.Phone,
 		Email:       &params.Email,
 		Password:    &pswdHash,
 		DeviceToken: params.DeviceToken,
@@ -69,29 +71,25 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	token, err := h.jwtService.GenerateJWT(user.ID, user.Role)
+	sessionId, err := h.authService.CreateSession(ctx, user.ID, models.Role(user.Role))
 	if err != nil {
-		httputil.InternalServerErrorResponse(writer, "Error generating token", err, isHtmx)
+		httputil.InternalServerErrorResponse(writer, "Error creating session", err, isHtmx)
 		return
 	}
 
-	if !isHtmx {
-		httputil.JSONResponse(writer, 200, map[string]string{"token": token})
-		return
-	}
-
-	cookie := h.jwtService.GenerateJwtCookie(token)
+	cookie := auth.CreateCookie(sessionId)
 	http.SetCookie(writer, &cookie)
 	writer.Header().Set("HX-Redirect", "/home")
 }
 
-func (h *Handler) GetMyAccount(writer http.ResponseWriter, request *http.Request) {
-	userId, err := auth.GetUserIdFromContext(request.Context())
+func (h *Handler) GetMyAccount(writer http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	session, err := auth.GetSessionFromCtx(ctx)
 	if err != nil {
 		httputil.InternalServerErrorResponse(writer, "Failed to get user id from context", err, false)
 		return
 	}
-	user, err := h.db.GetUserBasicInfoById(request.Context(), userId)
+	user, err := h.db.GetUserBasicInfoById(ctx, session.UserID)
 	if err != nil {
 		httputil.InternalServerErrorResponse(writer, "Failed to get user", err, false)
 		return

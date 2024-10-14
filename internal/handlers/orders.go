@@ -49,9 +49,9 @@ func NewQuotePrices() QuotePrices {
 
 // Get delivery cost, prices locked and guaranteed for 15 minuted
 func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
-	userId, err := auth.GetUserIdFromContext(r.Context())
+	session, err := auth.GetSessionFromCtx(r.Context())
 	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to retrieve userId of user from claims %v", err, false)
+		httputil.InternalServerErrorResponse(w, "Failed to retrieve session of user %v", err, false)
 		return
 	}
 
@@ -92,13 +92,13 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 		Valid: true,
 	}
 	err = h.db.UpsertQuote(r.Context(), database.UpsertQuoteParams{
-		UserID:         userId,
-		PickupAddr:     params.PickupAddress,
-		DeliveryAddr:   params.DeliveryAddress,
-		DistanceMeters: meters,
-		DrivingSeconds: seconds,
-		PriceOptions:   priceOptions,
-		ExpiresAt:      expiresTimestamptz,
+		UserID:          session.UserID,
+		PickupAddress:   params.PickupAddress,
+		DeliveryAddress: params.DeliveryAddress,
+		DistanceMeters:  meters,
+		DrivingSeconds:  seconds,
+		PriceOptions:    priceOptions,
+		ExpiresAt:       expiresTimestamptz,
 	})
 	if err != nil {
 		httputil.InternalServerErrorResponse(w, "Failed to upsert quote", err, false)
@@ -117,9 +117,9 @@ func (h *Handler) GetOrderQuote(w http.ResponseWriter, r *http.Request) {
 // handlerNewOrder handles the creation of a new order from a quote
 func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userClaims, err := auth.GetUserClaimsFromContext(ctx)
+	session, err := auth.GetSessionFromCtx(ctx)
 	if err != nil {
-		httputil.InternalServerErrorResponse(w, "Failed to retrieve claims of user %v", err, false)
+		httputil.InternalServerErrorResponse(w, "Failed to retrieve session of user %v", err, false)
 		return
 	}
 
@@ -135,9 +135,9 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderQuote, err := h.db.GetOrderQuote(ctx, database.GetOrderQuoteParams{
-		UserID:       userClaims.UserID,
-		PickupAddr:   params.PickupAddress,
-		DeliveryAddr: params.DeliveryAddress,
+		UserID:          session.UserID,
+		PickupAddress:   params.PickupAddress,
+		DeliveryAddress: params.DeliveryAddress,
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -153,9 +153,10 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	otherUser, err := h.db.GetOrCreateTempUser(ctx, database.GetOrCreateTempUserParams{
-		Phone: params.Phone,
-		Name:  nil,
-		Email: nil,
+		Phone:     &params.Phone,
+		FirstName: nil,
+		LastName:  nil,
+		Email:     nil,
 	})
 	if err != nil {
 		httputil.InternalServerErrorResponse(w, "Failed to GetOrCreateTempUser", err, false)
@@ -175,33 +176,33 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var recipientId, senderId int32
+	var recipientId, senderId int64
 	var status string
-	if userClaims.Role != models.RoleMerchant.String() {
+	if session.Role != models.RoleMerchant.String() {
 		// If user is not from a webshop or merchant order
 		if params.IsSender {
 			recipientId = otherUser.ID
-			senderId = userClaims.UserID
+			senderId = session.UserID
 		} else {
-			recipientId = userClaims.UserID
+			recipientId = session.UserID
 			senderId = otherUser.ID
 		}
 		status = models.Pending.String()
 	} else {
 		// Web shop or merchant order
 		recipientId = otherUser.ID
-		senderId = userClaims.UserID
+		senderId = session.UserID
 		status = models.Confirmed.String()
 	}
 
 	// Set price from price options
 	newOrder, err := h.db.CreateOrder(ctx, database.CreateOrderParams{
-		UserID:          userClaims.UserID,
+		UserID:          session.UserID,
 		SenderID:        senderId,
 		RecipientID:     recipientId,
-		PickupAddress:   orderQuote.PickupAddr,
-		DeliveryAddress: orderQuote.DeliveryAddr,
-		Distance:        orderQuote.DistanceMeters,
+		PickupAddress:   orderQuote.PickupAddress,
+		DeliveryAddress: orderQuote.DeliveryAddress,
+		DistanceMeters:  orderQuote.DistanceMeters,
 		DrivingSeconds:  orderQuote.DrivingSeconds,
 		PriceCents:      price,
 		Status:          status,
@@ -213,7 +214,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 
 	// TODO Notify user sms with order url
 	msg := fmt.Sprintf("Pakke på vei til deg. https://svipp.app/orders/%s", newOrder.PublicID)
-	h.smsService.SendSMSAsync(otherUser.Phone, msg)
+	h.smsService.SendSMSAsync(*otherUser.Phone, msg)
 
 	httputil.JSONResponse(w, http.StatusCreated, newOrder)
 }

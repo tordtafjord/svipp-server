@@ -14,20 +14,21 @@ INSERT INTO driver (id)
 VALUES ($1)
 `
 
-func (q *Queries) CreateDriver(ctx context.Context, id int32) error {
+func (q *Queries) CreateDriver(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, createDriver, id)
 	return err
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, phone, email, password, device_token, temporary, role)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, name, phone, email, role
+INSERT INTO users (first_name, last_name, phone, email, password, device_token, temporary, role)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, first_name, last_name, phone, email, role
 `
 
 type CreateUserParams struct {
-	Name        *string `json:"name"`
-	Phone       string  `json:"phone"`
+	FirstName   *string `json:"firstName"`
+	LastName    *string `json:"lastName"`
+	Phone       *string `json:"phone"`
 	Email       *string `json:"email"`
 	Password    *string `json:"password"`
 	DeviceToken *string `json:"deviceToken"`
@@ -36,16 +37,18 @@ type CreateUserParams struct {
 }
 
 type CreateUserRow struct {
-	ID    int32   `json:"id"`
-	Name  *string `json:"name"`
-	Phone string  `json:"phone"`
-	Email *string `json:"email"`
-	Role  string  `json:"role"`
+	ID        int64   `json:"id"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	Phone     *string `json:"phone"`
+	Email     *string `json:"email"`
+	Role      string  `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRow(ctx, createUser,
-		arg.Name,
+		arg.FirstName,
+		arg.LastName,
 		arg.Phone,
 		arg.Email,
 		arg.Password,
@@ -56,7 +59,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.FirstName,
+		&i.LastName,
 		&i.Phone,
 		&i.Email,
 		&i.Role,
@@ -70,7 +74,7 @@ FROM users
 WHERE id = $1
 `
 
-func (q *Queries) GetDeviceTokenByUserID(ctx context.Context, id int32) (*string, error) {
+func (q *Queries) GetDeviceTokenByUserID(ctx context.Context, id int64) (*string, error) {
 	row := q.db.QueryRow(ctx, getDeviceTokenByUserID, id)
 	var device_token *string
 	err := row.Scan(&device_token)
@@ -82,7 +86,7 @@ SELECT id, status, created_at, updated_at, deleted_at
 FROM driver WHERE id = $1
 `
 
-func (q *Queries) GetDriverById(ctx context.Context, id int32) (Driver, error) {
+func (q *Queries) GetDriverById(ctx context.Context, id int64) (Driver, error) {
 	row := q.db.QueryRow(ctx, getDriverById, id)
 	var i Driver
 	err := row.Scan(
@@ -96,33 +100,41 @@ func (q *Queries) GetDriverById(ctx context.Context, id int32) (Driver, error) {
 }
 
 const getOrCreateTempUser = `-- name: GetOrCreateTempUser :one
-INSERT INTO users (phone, name, email, temporary)
-VALUES ($1, $2, $3, true)
+INSERT INTO users (phone, first_name, last_name, email, temporary)
+VALUES ($1, $2, $3, $4, true)
 ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone
-RETURNING id, name, phone, email, role, device_token
+RETURNING id, first_name, last_name, phone, email, role, device_token
 `
 
 type GetOrCreateTempUserParams struct {
-	Phone string  `json:"phone"`
-	Name  *string `json:"name"`
-	Email *string `json:"email"`
+	Phone     *string `json:"phone"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	Email     *string `json:"email"`
 }
 
 type GetOrCreateTempUserRow struct {
-	ID          int32   `json:"id"`
-	Name        *string `json:"name"`
-	Phone       string  `json:"phone"`
+	ID          int64   `json:"id"`
+	FirstName   *string `json:"firstName"`
+	LastName    *string `json:"lastName"`
+	Phone       *string `json:"phone"`
 	Email       *string `json:"email"`
 	Role        string  `json:"role"`
 	DeviceToken *string `json:"deviceToken"`
 }
 
 func (q *Queries) GetOrCreateTempUser(ctx context.Context, arg GetOrCreateTempUserParams) (GetOrCreateTempUserRow, error) {
-	row := q.db.QueryRow(ctx, getOrCreateTempUser, arg.Phone, arg.Name, arg.Email)
+	row := q.db.QueryRow(ctx, getOrCreateTempUser,
+		arg.Phone,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+	)
 	var i GetOrCreateTempUserRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.FirstName,
+		&i.LastName,
 		&i.Phone,
 		&i.Email,
 		&i.Role,
@@ -132,24 +144,26 @@ func (q *Queries) GetOrCreateTempUser(ctx context.Context, arg GetOrCreateTempUs
 }
 
 const getUserBasicInfoById = `-- name: GetUserBasicInfoById :one
-SELECT id, name, phone, email
+SELECT id, first_name, last_name, phone, email
 FROM users
 WHERE id = $1
 `
 
 type GetUserBasicInfoByIdRow struct {
-	ID    int32   `json:"id"`
-	Name  *string `json:"name"`
-	Phone string  `json:"phone"`
-	Email *string `json:"email"`
+	ID        int64   `json:"id"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	Phone     *string `json:"phone"`
+	Email     *string `json:"email"`
 }
 
-func (q *Queries) GetUserBasicInfoById(ctx context.Context, id int32) (GetUserBasicInfoByIdRow, error) {
+func (q *Queries) GetUserBasicInfoById(ctx context.Context, id int64) (GetUserBasicInfoByIdRow, error) {
 	row := q.db.QueryRow(ctx, getUserBasicInfoById, id)
 	var i GetUserBasicInfoByIdRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.FirstName,
+		&i.LastName,
 		&i.Phone,
 		&i.Email,
 	)
@@ -157,7 +171,7 @@ func (q *Queries) GetUserBasicInfoById(ctx context.Context, id int32) (GetUserBa
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, phone, email, password, device_token, temporary, rate_total, rates, created_at, updated_at, deleted_at, role
+SELECT id, first_name, last_name, phone, email, password, device_token, temporary, role, rate_total, rates, created_at, updated_at, deleted_at
 FROM users WHERE email = $1 AND email IS NOT NULL
 `
 
@@ -166,18 +180,19 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email *string) (User, erro
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.FirstName,
+		&i.LastName,
 		&i.Phone,
 		&i.Email,
 		&i.Password,
 		&i.DeviceToken,
 		&i.Temporary,
+		&i.Role,
 		&i.RateTotal,
 		&i.Rates,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.Role,
 	)
 	return i, err
 }
@@ -187,9 +202,9 @@ SELECT id
 FROM users WHERE phone = $1
 `
 
-func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (int32, error) {
+func (q *Queries) GetUserByPhone(ctx context.Context, phone *string) (int64, error) {
 	row := q.db.QueryRow(ctx, getUserByPhone, phone)
-	var id int32
+	var id int64
 	err := row.Scan(&id)
 	return id, err
 }
@@ -202,7 +217,7 @@ WHERE id = $1
 `
 
 type UpdateDeviceTokenByUserIDParams struct {
-	ID          int32   `json:"id"`
+	ID          int64   `json:"id"`
 	DeviceToken *string `json:"deviceToken"`
 }
 

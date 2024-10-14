@@ -7,11 +7,12 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"svipp-server/internal/auth"
 	"svipp-server/internal/httputil"
 )
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	if h.jwtService.IsAuthenticated(*r) {
+	if h.authService.IsAuthenticated(r) {
 		h.FrontPage(w, r)
 		return
 	}
@@ -19,7 +20,7 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
-	if h.jwtService.IsAuthenticated(*r) {
+	if h.authService.IsAuthenticated(r) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -68,16 +69,13 @@ func (h *Handler) SingleOrderPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	// Clear the JWT cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
+
+	if err := h.authService.DeleteSession(r); err != nil {
+		log.Printf("Failed to delete session %v", err)
+	}
+
+	// Clear the cookie
+	http.SetCookie(w, auth.ClearCookie())
 	// Redirect to the login page or home page
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

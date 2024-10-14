@@ -18,10 +18,10 @@ SET
     confirmed_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_seconds, price_cents, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords, delivery_window_start, delivery_window_end
+RETURNING id, user_id, sender_id, recipient_id, driver_id, public_id, pickup_address, delivery_address, pickup_coords, delivery_coords, status, distance_meters, driving_seconds, price_cents, delivery_window_start, delivery_window_end, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
 `
 
-func (q *Queries) ConfirmOrderById(ctx context.Context, id int32) (Order, error) {
+func (q *Queries) ConfirmOrderById(ctx context.Context, id int64) (Order, error) {
 	row := q.db.QueryRow(ctx, confirmOrderById, id)
 	var i Order
 	err := row.Scan(
@@ -30,12 +30,17 @@ func (q *Queries) ConfirmOrderById(ctx context.Context, id int32) (Order, error)
 		&i.SenderID,
 		&i.RecipientID,
 		&i.DriverID,
+		&i.PublicID,
 		&i.PickupAddress,
 		&i.DeliveryAddress,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 		&i.Status,
-		&i.Distance,
+		&i.DistanceMeters,
 		&i.DrivingSeconds,
 		&i.PriceCents,
+		&i.DeliveryWindowStart,
+		&i.DeliveryWindowEnd,
 		&i.CreatedAt,
 		&i.ConfirmedAt,
 		&i.AcceptedAt,
@@ -43,11 +48,6 @@ func (q *Queries) ConfirmOrderById(ctx context.Context, id int32) (Order, error)
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
-		&i.PublicID,
-		&i.PickupCoords,
-		&i.DeliveryCoords,
-		&i.DeliveryWindowStart,
-		&i.DeliveryWindowEnd,
 	)
 	return i, err
 }
@@ -59,7 +59,7 @@ INSERT INTO orders (
     recipient_id,
     pickup_address,
     delivery_address,
-    distance,
+    distance_meters,
     driving_seconds,
     price_cents,
     status
@@ -75,16 +75,16 @@ VALUES (
            $8,
            $9
        )
-RETURNING pickup_address, delivery_address, distance, price_cents, status, public_id::text
+RETURNING pickup_address, delivery_address, distance_meters, price_cents, status, public_id::text
 `
 
 type CreateOrderParams struct {
-	UserID          int32  `json:"userId"`
-	SenderID        int32  `json:"senderId"`
-	RecipientID     int32  `json:"recipientId"`
+	UserID          int64  `json:"userId"`
+	SenderID        int64  `json:"senderId"`
+	RecipientID     int64  `json:"recipientId"`
 	PickupAddress   string `json:"pickupAddress"`
 	DeliveryAddress string `json:"deliveryAddress"`
-	Distance        int32  `json:"distance"`
+	DistanceMeters  int32  `json:"distanceMeters"`
 	DrivingSeconds  int32  `json:"drivingSeconds"`
 	PriceCents      int32  `json:"priceCents"`
 	Status          string `json:"status"`
@@ -93,7 +93,7 @@ type CreateOrderParams struct {
 type CreateOrderRow struct {
 	PickupAddress   string `json:"pickupAddress"`
 	DeliveryAddress string `json:"deliveryAddress"`
-	Distance        int32  `json:"distance"`
+	DistanceMeters  int32  `json:"distanceMeters"`
 	PriceCents      int32  `json:"priceCents"`
 	Status          string `json:"status"`
 	PublicID        string `json:"publicId"`
@@ -106,7 +106,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Creat
 		arg.RecipientID,
 		arg.PickupAddress,
 		arg.DeliveryAddress,
-		arg.Distance,
+		arg.DistanceMeters,
 		arg.DrivingSeconds,
 		arg.PriceCents,
 		arg.Status,
@@ -115,7 +115,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Creat
 	err := row.Scan(
 		&i.PickupAddress,
 		&i.DeliveryAddress,
-		&i.Distance,
+		&i.DistanceMeters,
 		&i.PriceCents,
 		&i.Status,
 		&i.PublicID,
@@ -129,15 +129,15 @@ FROM orders
 WHERE id = $1
 `
 
-func (q *Queries) GetOrderDriverIdByOrderId(ctx context.Context, id int32) ([]*int32, error) {
+func (q *Queries) GetOrderDriverIdByOrderId(ctx context.Context, id int64) ([]*int64, error) {
 	rows, err := q.db.Query(ctx, getOrderDriverIdByOrderId, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*int32
+	var items []*int64
 	for rows.Next() {
-		var driver_id *int32
+		var driver_id *int64
 		if err := rows.Scan(&driver_id); err != nil {
 			return nil, err
 		}
@@ -156,7 +156,7 @@ SELECT
     o.delivery_address,
     o.delivery_coords,
     o.status,
-    o.distance,
+    o.distance_meters,
     o.driving_seconds,
     o.created_at,
     o.confirmed_at,
@@ -164,9 +164,9 @@ SELECT
     o.picked_up_at,
     o.delivered_at,
     o.cancelled_at,
-    sender.name AS sender_name,
+    sender.first_name AS sender_name,
     -- Add more sender columns as needed
-    driver.name AS driver_name,
+    driver.first_name AS driver_name,
     driver.rates AS driver_rates,
     driver.rate_total AS driver_rate_total
 FROM
@@ -184,7 +184,7 @@ type GetOrderInfoByPublicIdRow struct {
 	DeliveryAddress string             `json:"deliveryAddress"`
 	DeliveryCoords  interface{}        `json:"deliveryCoords"`
 	Status          string             `json:"status"`
-	Distance        int32              `json:"distance"`
+	DistanceMeters  int32              `json:"distanceMeters"`
 	DrivingSeconds  int32              `json:"drivingSeconds"`
 	CreatedAt       pgtype.Timestamptz `json:"createdAt"`
 	ConfirmedAt     pgtype.Timestamptz `json:"confirmedAt"`
@@ -208,7 +208,7 @@ func (q *Queries) GetOrderInfoByPublicId(ctx context.Context, dollar_1 pgtype.UU
 		&i.DeliveryAddress,
 		&i.DeliveryCoords,
 		&i.Status,
-		&i.Distance,
+		&i.DistanceMeters,
 		&i.DrivingSeconds,
 		&i.CreatedAt,
 		&i.ConfirmedAt,
@@ -225,13 +225,13 @@ func (q *Queries) GetOrderInfoByPublicId(ctx context.Context, dollar_1 pgtype.UU
 }
 
 const getOrdersByDriverId = `-- name: GetOrdersByDriverId :many
-SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_seconds, price_cents, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords, delivery_window_start, delivery_window_end
+SELECT id, user_id, sender_id, recipient_id, driver_id, public_id, pickup_address, delivery_address, pickup_coords, delivery_coords, status, distance_meters, driving_seconds, price_cents, delivery_window_start, delivery_window_end, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
 FROM orders
 WHERE driver_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]Order, error) {
+func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int64) ([]Order, error) {
 	rows, err := q.db.Query(ctx, getOrdersByDriverId, driverID)
 	if err != nil {
 		return nil, err
@@ -246,12 +246,17 @@ func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]O
 			&i.SenderID,
 			&i.RecipientID,
 			&i.DriverID,
+			&i.PublicID,
 			&i.PickupAddress,
 			&i.DeliveryAddress,
+			&i.PickupCoords,
+			&i.DeliveryCoords,
 			&i.Status,
-			&i.Distance,
+			&i.DistanceMeters,
 			&i.DrivingSeconds,
 			&i.PriceCents,
+			&i.DeliveryWindowStart,
+			&i.DeliveryWindowEnd,
 			&i.CreatedAt,
 			&i.ConfirmedAt,
 			&i.AcceptedAt,
@@ -259,11 +264,6 @@ func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]O
 			&i.DeliveredAt,
 			&i.UpdatedAt,
 			&i.CancelledAt,
-			&i.PublicID,
-			&i.PickupCoords,
-			&i.DeliveryCoords,
-			&i.DeliveryWindowStart,
-			&i.DeliveryWindowEnd,
 		); err != nil {
 			return nil, err
 		}
@@ -276,13 +276,13 @@ func (q *Queries) GetOrdersByDriverId(ctx context.Context, driverID *int32) ([]O
 }
 
 const getOrdersByUserId = `-- name: GetOrdersByUserId :many
-SELECT id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_seconds, price_cents, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords, delivery_window_start, delivery_window_end
+SELECT id, user_id, sender_id, recipient_id, driver_id, public_id, pickup_address, delivery_address, pickup_coords, delivery_coords, status, distance_meters, driving_seconds, price_cents, delivery_window_start, delivery_window_end, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
 FROM orders
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetOrdersByUserId(ctx context.Context, userID int32) ([]Order, error) {
+func (q *Queries) GetOrdersByUserId(ctx context.Context, userID int64) ([]Order, error) {
 	rows, err := q.db.Query(ctx, getOrdersByUserId, userID)
 	if err != nil {
 		return nil, err
@@ -297,12 +297,17 @@ func (q *Queries) GetOrdersByUserId(ctx context.Context, userID int32) ([]Order,
 			&i.SenderID,
 			&i.RecipientID,
 			&i.DriverID,
+			&i.PublicID,
 			&i.PickupAddress,
 			&i.DeliveryAddress,
+			&i.PickupCoords,
+			&i.DeliveryCoords,
 			&i.Status,
-			&i.Distance,
+			&i.DistanceMeters,
 			&i.DrivingSeconds,
 			&i.PriceCents,
+			&i.DeliveryWindowStart,
+			&i.DeliveryWindowEnd,
 			&i.CreatedAt,
 			&i.ConfirmedAt,
 			&i.AcceptedAt,
@@ -310,11 +315,6 @@ func (q *Queries) GetOrdersByUserId(ctx context.Context, userID int32) ([]Order,
 			&i.DeliveredAt,
 			&i.UpdatedAt,
 			&i.CancelledAt,
-			&i.PublicID,
-			&i.PickupCoords,
-			&i.DeliveryCoords,
-			&i.DeliveryWindowStart,
-			&i.DeliveryWindowEnd,
 		); err != nil {
 			return nil, err
 		}
@@ -335,12 +335,12 @@ SET
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $2      -- Order ID for which the driver_id needs to be updated
   AND driver_id IS NULL  -- Only update if driver_id is not already set
-RETURNING id, user_id, sender_id, recipient_id, driver_id, pickup_address, delivery_address, status, distance, driving_seconds, price_cents, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at, public_id, pickup_coords, delivery_coords, delivery_window_start, delivery_window_end
+RETURNING id, user_id, sender_id, recipient_id, driver_id, public_id, pickup_address, delivery_address, pickup_coords, delivery_coords, status, distance_meters, driving_seconds, price_cents, delivery_window_start, delivery_window_end, created_at, confirmed_at, accepted_at, picked_up_at, delivered_at, updated_at, cancelled_at
 `
 
 type SetDriverIdByOrderIdParams struct {
-	DriverID *int32 `json:"driverId"`
-	ID       int32  `json:"id"`
+	DriverID *int64 `json:"driverId"`
+	ID       int64  `json:"id"`
 }
 
 func (q *Queries) SetDriverIdByOrderId(ctx context.Context, arg SetDriverIdByOrderIdParams) (Order, error) {
@@ -352,12 +352,17 @@ func (q *Queries) SetDriverIdByOrderId(ctx context.Context, arg SetDriverIdByOrd
 		&i.SenderID,
 		&i.RecipientID,
 		&i.DriverID,
+		&i.PublicID,
 		&i.PickupAddress,
 		&i.DeliveryAddress,
+		&i.PickupCoords,
+		&i.DeliveryCoords,
 		&i.Status,
-		&i.Distance,
+		&i.DistanceMeters,
 		&i.DrivingSeconds,
 		&i.PriceCents,
+		&i.DeliveryWindowStart,
+		&i.DeliveryWindowEnd,
 		&i.CreatedAt,
 		&i.ConfirmedAt,
 		&i.AcceptedAt,
@@ -365,11 +370,6 @@ func (q *Queries) SetDriverIdByOrderId(ctx context.Context, arg SetDriverIdByOrd
 		&i.DeliveredAt,
 		&i.UpdatedAt,
 		&i.CancelledAt,
-		&i.PublicID,
-		&i.PickupCoords,
-		&i.DeliveryCoords,
-		&i.DeliveryWindowStart,
-		&i.DeliveryWindowEnd,
 	)
 	return i, err
 }

@@ -23,9 +23,11 @@ func (h *Handler) CreateDriver(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
+	var lastName string
 	user, err := h.db.CreateUser(request.Context(), database.CreateUserParams{
-		Name:        params.Name,
-		Phone:       params.Phone,
+		FirstName:   params.Name,
+		LastName:    &lastName,
+		Phone:       &params.Phone,
 		Email:       &params.Email,
 		Password:    &params.Password,
 		DeviceToken: params.DeviceToken,

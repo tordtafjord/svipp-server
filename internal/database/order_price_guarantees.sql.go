@@ -13,39 +13,39 @@ import (
 
 const getOrderQuote = `-- name: GetOrderQuote :one
 SELECT
-    pickup_addr,
-    delivery_addr,
+    pickup_address,
+    delivery_address,
     distance_meters,
     driving_seconds,
     price_options
-FROM order_price_guarantees
+FROM order_quote
 WHERE
     user_id = $1 AND
-    pickup_addr = $2 AND
-    delivery_addr = $3 AND
+    pickup_address = $2 AND
+    delivery_address = $3 AND
     expires_at > NOW()
 `
 
 type GetOrderQuoteParams struct {
-	UserID       int32  `json:"userId"`
-	PickupAddr   string `json:"pickupAddr"`
-	DeliveryAddr string `json:"deliveryAddr"`
+	UserID          int64  `json:"userId"`
+	PickupAddress   string `json:"pickupAddress"`
+	DeliveryAddress string `json:"deliveryAddress"`
 }
 
 type GetOrderQuoteRow struct {
-	PickupAddr     string `json:"pickupAddr"`
-	DeliveryAddr   string `json:"deliveryAddr"`
-	DistanceMeters int32  `json:"distanceMeters"`
-	DrivingSeconds int32  `json:"drivingSeconds"`
-	PriceOptions   []byte `json:"priceOptions"`
+	PickupAddress   string `json:"pickupAddress"`
+	DeliveryAddress string `json:"deliveryAddress"`
+	DistanceMeters  int32  `json:"distanceMeters"`
+	DrivingSeconds  int32  `json:"drivingSeconds"`
+	PriceOptions    []byte `json:"priceOptions"`
 }
 
 func (q *Queries) GetOrderQuote(ctx context.Context, arg GetOrderQuoteParams) (GetOrderQuoteRow, error) {
-	row := q.db.QueryRow(ctx, getOrderQuote, arg.UserID, arg.PickupAddr, arg.DeliveryAddr)
+	row := q.db.QueryRow(ctx, getOrderQuote, arg.UserID, arg.PickupAddress, arg.DeliveryAddress)
 	var i GetOrderQuoteRow
 	err := row.Scan(
-		&i.PickupAddr,
-		&i.DeliveryAddr,
+		&i.PickupAddress,
+		&i.DeliveryAddress,
 		&i.DistanceMeters,
 		&i.DrivingSeconds,
 		&i.PriceOptions,
@@ -54,10 +54,10 @@ func (q *Queries) GetOrderQuote(ctx context.Context, arg GetOrderQuoteParams) (G
 }
 
 const upsertQuote = `-- name: UpsertQuote :exec
-INSERT INTO order_price_guarantees (
+INSERT INTO order_quote(
     user_id,
-    pickup_addr,
-    delivery_addr,
+    pickup_address,
+    delivery_address,
     distance_meters,
     driving_seconds,
     price_options,
@@ -71,7 +71,7 @@ VALUES (
            $5,
            $6,
            $7 )
-ON CONFLICT (delivery_addr, pickup_addr, user_id)
+ON CONFLICT (delivery_address, pickup_address, user_id)
 DO UPDATE SET
               distance_meters = excluded.distance_meters,
               driving_seconds = excluded.driving_seconds,
@@ -80,20 +80,20 @@ DO UPDATE SET
 `
 
 type UpsertQuoteParams struct {
-	UserID         int32              `json:"userId"`
-	PickupAddr     string             `json:"pickupAddr"`
-	DeliveryAddr   string             `json:"deliveryAddr"`
-	DistanceMeters int32              `json:"distanceMeters"`
-	DrivingSeconds int32              `json:"drivingSeconds"`
-	PriceOptions   []byte             `json:"priceOptions"`
-	ExpiresAt      pgtype.Timestamptz `json:"expiresAt"`
+	UserID          int64              `json:"userId"`
+	PickupAddress   string             `json:"pickupAddress"`
+	DeliveryAddress string             `json:"deliveryAddress"`
+	DistanceMeters  int32              `json:"distanceMeters"`
+	DrivingSeconds  int32              `json:"drivingSeconds"`
+	PriceOptions    []byte             `json:"priceOptions"`
+	ExpiresAt       pgtype.Timestamptz `json:"expiresAt"`
 }
 
 func (q *Queries) UpsertQuote(ctx context.Context, arg UpsertQuoteParams) error {
 	_, err := q.db.Exec(ctx, upsertQuote,
 		arg.UserID,
-		arg.PickupAddr,
-		arg.DeliveryAddr,
+		arg.PickupAddress,
+		arg.DeliveryAddress,
 		arg.DistanceMeters,
 		arg.DrivingSeconds,
 		arg.PriceOptions,

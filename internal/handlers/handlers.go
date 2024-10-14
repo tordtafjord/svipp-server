@@ -12,7 +12,7 @@ import (
 
 type Handler struct {
 	db          *database.Queries
-	jwtService  *auth.JWTService
+	authService *auth.Service
 	smsService  *sms.TwilioClient
 	mapsService *maps.MapsService
 }
@@ -22,7 +22,7 @@ var validate *validator.Validate
 func NewHandler(srv *config.Services) *Handler {
 	return &Handler{
 		db:          srv.DB,
-		jwtService:  srv.JwtService,
+		authService: srv.AuthService,
 		smsService:  srv.SmsClient,
 		mapsService: srv.MapsClient,
 	}

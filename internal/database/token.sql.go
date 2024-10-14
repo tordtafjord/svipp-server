@@ -11,6 +11,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteSession = `-- name: DeleteSession :exec
+DELETE FROM token WHERE token = $1
+`
+
+func (q *Queries) DeleteSession(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteSession, token)
+	return err
+}
+
+const getSession = `-- name: GetSession :one
+SELECT user_id, role, expires_at FROM token WHERE token = $1 AND expires_at > CURRENT_TIMESTAMP
+`
+
+type GetSessionRow struct {
+	UserID    int64              `json:"userId"`
+	Role      string             `json:"role"`
+	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
+}
+
+func (q *Queries) GetSession(ctx context.Context, token string) (GetSessionRow, error) {
+	row := q.db.QueryRow(ctx, getSession, token)
+	var i GetSessionRow
+	err := row.Scan(&i.UserID, &i.Role, &i.ExpiresAt)
+	return i, err
+}
+
 const insertToken = `-- name: InsertToken :one
 INSERT INTO token (token, expires_at, user_id, role)
 VALUES ($1, $2, $3, $4)
@@ -20,12 +46,12 @@ VALUES ($1, $2, $3, $4)
 type InsertTokenParams struct {
 	Token     string             `json:"token"`
 	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
-	UserID    int32              `json:"userId"`
+	UserID    int64              `json:"userId"`
 	Role      string             `json:"role"`
 }
 
 type InsertTokenRow struct {
-	UserID    int32              `json:"userId"`
+	UserID    int64              `json:"userId"`
 	Role      string             `json:"role"`
 	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
 }

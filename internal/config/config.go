@@ -22,7 +22,7 @@ type Services struct {
 	MapsClient  *maps.MapsService
 	SmsClient   *sms.TwilioClient
 	FirebaseApp *firebase.App
-	JwtService  *auth.JWTService
+	AuthService *auth.Service
 }
 
 type Config struct {
@@ -60,8 +60,6 @@ func loadConfig() (*Config, error) {
 
 func InitializeServices(cfg *Config) (*Services, error) {
 	services := &Services{}
-
-	services.JwtService = auth.NewJWTService(env.GetString("JWT_SECRET", "nVe2NeA2ByJDrDeDqOjGw0RBQS4WQkA53TY14DQl8/Q="))
 
 	// Initialize Maps client
 	mapsClient, err := gmaps.NewClient(gmaps.WithAPIKey(env.GetString("GOOGLE_MAPS_API_KEY", "")))
@@ -101,6 +99,8 @@ func InitializeServices(cfg *Config) (*Services, error) {
 			return nil, fmt.Errorf("failed to run database migrations: %w", err)
 		}
 	}
+
+	services.AuthService = auth.NewAuthService(services.DB)
 
 	return services, nil
 }

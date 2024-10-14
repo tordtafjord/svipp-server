@@ -17,7 +17,7 @@ import (
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
 	h := handlers.NewHandler(s.services)
-	jwtMiddleware := NewJWTAuthMiddleware(s.services.JwtService)
+	authMiddleware := NewAuthMiddleware(s.services.AuthService)
 
 	setupBaseMiddlewares(mux)
 	setupStaticServing(mux)
@@ -31,10 +31,10 @@ func (s *server) routes() http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	mux.Mount("/", setupWebRoutes(h, jwtMiddleware, s.config.IsProd))
-	mux.Mount("/api", setupApiRoutes(h, jwtMiddleware, s.config.IsProd))
-	mux.Mount("/api/driver", setupDriverApiRoutes(h, jwtMiddleware, s.config.IsProd))
-	mux.Mount("/api/shopify", setupShopifyApiRoutes(h, jwtMiddleware, s.config.IsProd))
+	mux.Mount("/", setupWebRoutes(h, authMiddleware, s.config.IsProd))
+	mux.Mount("/api", setupApiRoutes(h, authMiddleware, s.config.IsProd))
+	mux.Mount("/api/driver", setupDriverApiRoutes(h, authMiddleware, s.config.IsProd))
+	mux.Mount("/api/shopify", setupShopifyApiRoutes(h, authMiddleware, s.config.IsProd))
 
 	// Add a catch-all route at the end
 	mux.NotFound(func(w http.ResponseWriter, r *http.Request) {
@@ -50,20 +50,20 @@ func (s *server) routes() http.Handler {
 	return mux
 }
 
-func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod bool) http.Handler {
+func setupWebRoutes(h *handlers.Handler, authMiddleware *AuthMiddleware, prod bool) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", h.HomePage)
 	r.Get("/login", h.LoginPage)
 	r.Get("/orders/{uuid}", h.SingleOrderPage)
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtCookieAuthMiddleware)
+		r.Use(authMiddleware.AuthMiddleware)
 		r.Get("/home", h.FrontPage)
 		r.Get("/logout", h.Logout) // Add this line for the logout route
 	})
 
 	r.Group(func(r chi.Router) {
 		if prod {
-			r.Use(jwtMiddleware.JwtCookieAuthMiddleware, RequireRole(models.RoleAdmin))
+			r.Use(authMiddleware.AuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Get("/signup", h.SignupPage)
 	})
@@ -71,7 +71,7 @@ func setupWebRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, prod 
 	return r
 }
 
-func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *AuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(LogRequestBody)
 
@@ -89,20 +89,20 @@ func setupShopifyApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware
 	return r
 }
 
-func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+func setupApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
 	r.Post("/auth", h.Authenticate)
 
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.CombinedAuthMiddleware, RequireRole(models.RoleAdmin))
+			r.Use(a.AuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/users", h.CreateUser)
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(LogRequestBody)
-		r.Use(jwtMiddleware.CombinedAuthMiddleware)
+		r.Use(a.AuthMiddleware)
 		r.Get("/users/me", h.GetMyAccount)
 		r.Post("/orders", h.NewOrder)
 		r.Post("/orders/quote", h.GetOrderQuote)
@@ -116,20 +116,20 @@ func setupApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isPro
 	return r
 }
 
-func setupDriverApiRoutes(h *handlers.Handler, jwtMiddleware *JWTAuthMiddleware, isProd bool) *chi.Mux {
+func setupDriverApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Admin-only routes
 	r.Group(func(r chi.Router) {
 		if isProd {
-			r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleAdmin))
+			r.Use(a.AuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/", h.CreateDriver)
 	})
 
 	// Driver and admin routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtMiddleware.JwtAuthMiddleware, RequireRole(models.RoleDriver, models.RoleAdmin), LogRequestBody)
+		r.Use(a.AuthMiddleware, RequireRole(models.RoleDriver, models.RoleAdmin), LogRequestBody)
 
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

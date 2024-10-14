@@ -16,7 +16,7 @@ VALUES (
            $5,
            $6,
            $7 )
-ON CONFLICT (delivery_addr, pickup_addr, user_id)
+ON CONFLICT (delivery_address, pickup_address, user_id)
 DO UPDATE SET
               distance_meters = excluded.distance_meters,
               driving_seconds = excluded.driving_seconds,
@@ -26,8 +26,8 @@ DO UPDATE SET
 
 -- name: GetOrderQuote :one
 SELECT
-    pickup_addr,
-    delivery_addr,
+    pickup_address,
+    delivery_address,
     distance_meters,
     driving_seconds,
     price_options
