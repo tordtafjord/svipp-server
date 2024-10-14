@@ -11,8 +11,8 @@ import (
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
-	"svipp-server/internal/maps"
-	"svipp-server/internal/sms"
+	"svipp-server/pkg/maps"
+	"svipp-server/pkg/sms"
 	"svipp-server/sql"
 )
 

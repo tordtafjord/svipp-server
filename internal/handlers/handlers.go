@@ -6,8 +6,8 @@ import (
 	"svipp-server/internal/auth"
 	"svipp-server/internal/config"
 	"svipp-server/internal/database"
-	"svipp-server/internal/maps"
-	"svipp-server/internal/sms"
+	"svipp-server/pkg/maps"
+	"svipp-server/pkg/sms"
 )
 
 type Handler struct {
