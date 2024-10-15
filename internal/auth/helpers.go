@@ -14,7 +14,7 @@ func CreateCookie(token string) http.Cookie {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true, // Set to true if using HTTPS
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   sessionExpirationSeconds, // Set the expiration time in seconds (e.g., 1 hour)
 	}
 }

@@ -74,7 +74,7 @@ func (a *AuthMiddleware) ApiKeyAuthMiddleware(next http.Handler) http.Handler {
 func RequireRole(allowedRoles ...models.Role) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			session, ok := r.Context().Value(auth.SessionContextKey).(*database.GetSessionRow)
+			session, ok := r.Context().Value(auth.SessionContextKey).(database.GetSessionRow)
 			if !ok {
 				log.Printf("Error loading session from context")
 				http.Redirect(w, r, "/", http.StatusSeeOther)
