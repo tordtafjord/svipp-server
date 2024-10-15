@@ -1,5 +1,4 @@
 -- +goose Up
-CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE orders
 (
@@ -8,11 +7,13 @@ CREATE TABLE orders
     sender_id           bigint   NOT NULL,
     recipient_id        bigint   NOT NULL,
     driver_id           bigint   DEFAULT NULL,
-    public_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    share_key UUID NOT NULL DEFAULT gen_random_uuid(),
     pickup_address   TEXT   NOT NULL,
     delivery_address TEXT   NOT NULL,
     pickup_coords GEOGRAPHY(POINT, 4326),
     delivery_coords GEOGRAPHY(POINT, 4326),
+    pickup_instructions TEXT,
+    delivery_instructions TEXT,
     status              TEXT      NOT NULL DEFAULT 'pending',
     distance_meters INTEGER NOT NULL,
     driving_seconds INTEGER NOT NULL,
@@ -32,7 +33,7 @@ CREATE TABLE orders
 );
 
 CREATE INDEX idx_orders_user_id ON orders(user_id);
-CREATE UNIQUE INDEX idx_orders_public_id ON orders(public_id);
+CREATE UNIQUE INDEX idx_orders_public_id ON orders(share_key);
 
 
 
@@ -40,4 +41,3 @@ CREATE UNIQUE INDEX idx_orders_public_id ON orders(public_id);
 
 -- +goose Down
 DROP TABLE orders;
-DROP EXTENSION IF EXISTS postgis;

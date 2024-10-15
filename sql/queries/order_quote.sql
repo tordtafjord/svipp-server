@@ -15,13 +15,14 @@ VALUES (
            $4,
            $5,
            $6,
-           $7 )
-ON CONFLICT (delivery_address, pickup_address, user_id)
+        $7)
+ON CONFLICT (user_id, pickup_address ,delivery_address)
 DO UPDATE SET
               distance_meters = excluded.distance_meters,
               driving_seconds = excluded.driving_seconds,
               price_options = excluded.price_options,
-              expires_at = excluded.expires_at;
+              expires_at = excluded.expires_at,
+              created_at = CURRENT_TIMESTAMP;
 
 
 -- name: GetOrderQuote :one

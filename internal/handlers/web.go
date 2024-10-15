@@ -33,7 +33,11 @@ func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
-	httputil.HtmxResponse(w, http.StatusOK, "signup.gohtml", nil)
+	if r.Host != "bedrift.svipp.app" {
+		httputil.HtmxResponse(w, http.StatusOK, "signup.gohtml", nil)
+		return
+	}
+	httputil.HtmxResponse(w, http.StatusOK, "biz-signup.gohtml", nil)
 }
 
 func (h *Handler) SingleOrderPage(w http.ResponseWriter, r *http.Request) {

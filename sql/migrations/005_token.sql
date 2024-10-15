@@ -5,7 +5,7 @@ CREATE TABLE token (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id bigint NOT NULL,
     role TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id)
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 

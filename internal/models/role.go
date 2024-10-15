@@ -6,7 +6,7 @@ const (
 	RoleUser     Role = "user"
 	RoleDriver   Role = "driver"
 	RoleAdmin    Role = "admin"
-	RoleMerchant Role = "merchant"
+	RoleBusiness Role = "business"
 )
 
 func (r Role) String() string {

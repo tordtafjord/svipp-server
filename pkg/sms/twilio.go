@@ -29,6 +29,11 @@ func (c *TwilioClient) SendSMSAsync(to, message string) {
 	go func() {
 		// is c.isProd when ready for prod
 		if true {
+			err := c.SendSMS("+18777804236", message)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 			log.Printf("SMS to %s with message: %s", to, message)
 			return
 		}
@@ -46,7 +51,7 @@ func (c *TwilioClient) SendSMS(to, message string) error {
 
 	msgData := url.Values{}
 	msgData.Set("To", to)
-	msgData.Set("messagingServiceSid", c.messagingServiceSid)
+	msgData.Set("MessagingServiceSid", c.messagingServiceSid)
 	msgData.Set("Body", message)
 
 	client := &http.Client{}

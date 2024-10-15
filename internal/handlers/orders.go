@@ -178,7 +178,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 
 	var recipientId, senderId int64
 	var status string
-	if session.Role != models.RoleMerchant.String() {
+	if session.Role != models.RoleBusiness.String() {
 		// If user is not from a webshop or merchant order
 		if params.IsSender {
 			recipientId = otherUser.ID

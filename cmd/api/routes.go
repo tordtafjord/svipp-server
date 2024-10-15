@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate"
 	"io/fs"
 	"log"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"svipp-server/internal/handlers"
 	"svipp-server/internal/httputil"
 	"svipp-server/internal/models"
-	"time"
 )
 
 func (s *server) routes() http.Handler {
@@ -98,6 +96,7 @@ func setupApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mu
 			r.Use(a.AuthMiddleware, RequireRole(models.RoleAdmin))
 		}
 		r.Post("/users", h.CreateUser)
+		r.Post("/business", h.CreateBusiness)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -147,7 +146,6 @@ func setupBaseMiddlewares(router *chi.Mux) {
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
-	router.Use(httprate.LimitByRealIP(100, 1*time.Minute))
 }
 
 func setupStaticServing(router *chi.Mux) {
