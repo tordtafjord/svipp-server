@@ -22,7 +22,7 @@ func (q *Queries) CreateDriver(ctx context.Context, id int64) error {
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (first_name, last_name, phone, email, password, device_token, temporary, role)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-ON CONFLICT (email, phone) DO UPDATE
+ON CONFLICT (phone) DO UPDATE
     SET first_name = EXCLUDED.first_name,
         last_name = EXCLUDED.last_name,
         phone = COALESCE(EXCLUDED.phone, users.phone),
