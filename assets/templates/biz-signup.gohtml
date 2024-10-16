@@ -5,7 +5,7 @@
     <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full max-w-4xl">
         <div class="card-body">
             <h1 class="card-title text-2xl justify-center mb-6">Opprett Bedriftskonto</h1>
-            <form hx-post="api/business" hx-target="#signup-response" hx-indicator="#loading">
+            <form hx-post="api/business" hx-target="#notifications" hx-indicator="#loading">
                 <div class="flex flex-col md:flex-row md:space-x-8">
                     <!-- Left pane: Personal details -->
                     <div class="w-full md:w-1/2">
@@ -76,7 +76,6 @@
                 </p>
             </div>
 
-        <div id="signup-response"></div>
         {{ template "loading-indicator.gohtml" }}
     </div>
 </div>
