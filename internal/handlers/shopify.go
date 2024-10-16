@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"svipp-server/internal/httputil"
 	"svipp-server/internal/models"
@@ -77,13 +76,6 @@ func (h *Handler) ShopifyCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Replace the body for further use
-
-	// Store the raw JSON in the database
-	err = h.db.CreateShopifyRequest(r.Context(), body)
-	if err != nil {
-		log.Printf("Failed to store Shopify request: %v", err)
-		// Note: We're logging the error but not returning, to ensure we still process the request
-	}
 
 	var rateRequest ShopifyRateRequest
 	err = json.NewDecoder(r.Body).Decode(&rateRequest)

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -16,7 +17,12 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 		h.FrontPage(w, r)
 		return
 	}
-	httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", nil)
+
+	data := map[string]interface{}{
+		"BizHost": template.URL("//" + h.bizHost),
+	}
+
+	httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", data)
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +39,7 @@ func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
-	if r.Host != "bedrift.svipp.app" {
+	if r.Host != h.bizHost {
 		httputil.HtmxResponse(w, http.StatusOK, "signup.gohtml", nil)
 		return
 	}

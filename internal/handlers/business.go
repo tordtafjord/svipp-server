@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
@@ -21,6 +22,8 @@ type createBusinessAccountRequest struct {
 	CompanyName     string  `json:"companyName" validate:"required,min=1,max=255"`
 	OrgNumber       string  `json:"orgNumber" validate:"required,len=9,numeric"`
 	BusinessAddress string  `json:"businessAddress" validate:"required,min=1,max=255"`
+	City            string  `json:"city" validate:"required,min=1,max=100"`
+	ZipCode         string  `json:"zipCode" validate:"required,min=4,max=10,numeric"`
 }
 
 func (h *Handler) CreateBusiness(writer http.ResponseWriter, request *http.Request) {
@@ -38,6 +41,8 @@ func (h *Handler) CreateBusiness(writer http.ResponseWriter, request *http.Reque
 			httputil.BadRequestResponse(writer, err, true)
 			return
 		}
+
+		params.OrgNumber = request.FormValue("orgNumber")
 		firstName := request.FormValue("firstName")
 		lastName := request.FormValue("lastName")
 		params.FirstName = &firstName
@@ -47,12 +52,19 @@ func (h *Handler) CreateBusiness(writer http.ResponseWriter, request *http.Reque
 		params.Password = request.FormValue("password")
 		params.ConfirmPassword = request.FormValue("confirmPassword")
 		params.BusinessAddress = request.FormValue("businessAddress")
-		params.OrgNumber = request.FormValue("orgNumber")
 		params.CompanyName = request.FormValue("companyName")
+		params.ZipCode = request.FormValue("zipCode")
+		params.City = request.FormValue("city")
 	}
 
 	if validationErrors := validateStruct(params); validationErrors != nil {
 		httputil.ValidationFailedResponse(writer, validationErrors, isHtmx)
+		return
+	}
+	// orgnr valid, parse to int64:
+	orgNr, err := strconv.ParseInt(params.OrgNumber, 10, 64)
+	if err != nil {
+		httputil.BadRequestResponse(writer, err, true)
 		return
 	}
 
@@ -78,6 +90,18 @@ func (h *Handler) CreateBusiness(writer http.ResponseWriter, request *http.Reque
 	}
 	// TODO: Double check this does not overwrite exising non temp users
 
+	addr := fmt.Sprintf("%s, %s %s", params.BusinessAddress, params.ZipCode, params.City)
+	err = h.db.CreateBusiness(ctx, database.CreateBusinessParams{
+		ID:      user.ID,
+		Name:    params.CompanyName,
+		OrgID:   orgNr,
+		Address: addr,
+	})
+	if err != nil {
+		httputil.ErrorResponse(writer, http.StatusConflict, fmt.Sprintf("Failed to create user: %v", err), "Oppretting av konto mislyktes, har du en fra før av?", isHtmx)
+		return
+	}
+
 	sessionId, err := h.authService.CreateSession(ctx, user.ID, models.Role(user.Role))
 	if err != nil {
 		httputil.InternalServerErrorResponse(writer, "Error creating session", err, isHtmx)
@@ -86,5 +110,5 @@ func (h *Handler) CreateBusiness(writer http.ResponseWriter, request *http.Reque
 
 	cookie := auth.CreateCookie(sessionId)
 	http.SetCookie(writer, &cookie)
-	writer.Header().Set("HX-Redirect", "/home")
+	writer.Header().Set("HX-Redirect", "/")
 }

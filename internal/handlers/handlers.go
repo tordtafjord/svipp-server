@@ -15,16 +15,18 @@ type Handler struct {
 	authService *auth.Service
 	smsService  *sms.TwilioClient
 	mapsService *maps.MapsService
+	bizHost     string
 }
 
 var validate *validator.Validate
 
-func NewHandler(srv *config.Services) *Handler {
+func NewHandler(srv *config.Services, bizHost string) *Handler {
 	return &Handler{
 		db:          srv.DB,
 		authService: srv.AuthService,
 		smsService:  srv.SmsClient,
 		mapsService: srv.MapsClient,
+		bizHost:     bizHost,
 	}
 }
 
@@ -44,17 +46,19 @@ func validateStruct(s interface{}) []string {
 
 	var errorMessages []string
 	for _, err := range err.(validator.ValidationErrors) {
-		switch err.Tag() {
-		case "required":
+		switch {
+		case err.Tag() == "required":
 			errorMessages = append(errorMessages, fmt.Sprintf("%s er et krav", err.Field()))
-		case "email":
+		case err.Tag() == "email":
 			errorMessages = append(errorMessages, fmt.Sprintf("'%s' er ikke en gyldig email", err.Value()))
-		case "min":
+		case err.Tag() == "min":
 			errorMessages = append(errorMessages, fmt.Sprintf("%s må være minst %s tegn langt", err.Field(), err.Param()))
-		case "e164":
+		case err.Tag() == "e164":
 			errorMessages = append(errorMessages, fmt.Sprintf("'%s' er ikke et gyldig telefonnummer", err.Value()))
-		case "eqfield":
+		case err.Tag() == "eqfield":
 			errorMessages = append(errorMessages, "Passord er ikke identiske")
+		case err.Field() == "OrgNumber":
+			errorMessages = append(errorMessages, fmt.Sprintf("'%s' er ikke et gyldig organisasjonsnummer", err.Value()))
 		default:
 			errorMessages = append(errorMessages, fmt.Sprintf("%s tilfredstiller ikke %s krav", err.Field(), err.Tag()))
 		}

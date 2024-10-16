@@ -18,6 +18,7 @@ import (
 type contextKey string
 
 const SessionContextKey contextKey = "session"
+const keyCacheExpiration = 1 * time.Hour
 const sessionExpiration = 30 * 24 * time.Hour
 const sessionExpirationSeconds = 30 * 24 * 3600
 const sessionCacheExpiration = 30 * time.Minute
@@ -25,14 +26,18 @@ const cacheCleanupInterval = 15 * time.Minute
 const CookieName = "sessionId"
 
 type Service struct {
-	db           *database.Queries
-	SessionCache *cache.Cache[string, database.GetSessionRow]
+	db            *database.Queries
+	sessionCache  *cache.Cache[string, database.GetSessionRow]
+	apiKeyCache   *cache.Cache[string, database.GetApiKeyInfoRow]
+	quoteKeyCache *cache.Cache[string, database.GetQuoteKeyInfoRow]
 }
 
 func NewAuthService(db *database.Queries) *Service {
 	return &Service{
-		db:           db,
-		SessionCache: cache.NewCache[string, database.GetSessionRow](sessionCacheExpiration, cacheCleanupInterval),
+		db:            db,
+		sessionCache:  cache.NewCache[string, database.GetSessionRow](sessionCacheExpiration, cacheCleanupInterval),
+		apiKeyCache:   cache.NewCache[string, database.GetApiKeyInfoRow](keyCacheExpiration, cacheCleanupInterval),
+		quoteKeyCache: cache.NewCache[string, database.GetQuoteKeyInfoRow](keyCacheExpiration, cacheCleanupInterval),
 	}
 }
 
@@ -43,7 +48,7 @@ func (a *Service) DeleteSession(r *http.Request) error {
 	}
 	sessionId := cookie.Value
 
-	a.SessionCache.Delete(sessionId)
+	a.sessionCache.Delete(sessionId)
 	err = a.db.DeleteSession(r.Context(), sessionId)
 	if err != nil {
 		log.Printf("Failed to delete session for token %s, %v", sessionId, err)
@@ -59,7 +64,7 @@ func (a *Service) CreateSession(ctx context.Context, userId int64, role models.R
 	if err != nil {
 		return "", err
 	}
-	token := base64.StdEncoding.EncodeToString(bytes)
+	token := base64.RawStdEncoding.EncodeToString(bytes)
 
 	// Expires
 	expiresAt := time.Now().Add(sessionExpiration)
@@ -77,11 +82,11 @@ func (a *Service) CreateSession(ctx context.Context, userId int64, role models.R
 	if err != nil {
 		return "", err
 	}
-	a.SessionCache.SetWithDefaultExpiration(token, database.GetSessionRow(session))
+	a.sessionCache.SetWithDefaultExpiration(token, database.GetSessionRow(session))
 	return token, nil
 }
 
-func (a *Service) CreateApiKey(ctx context.Context, userId int64, role models.Role) (string, error) {
+func (a *Service) CreateShopifyApiKey(ctx context.Context, params database.CreateShopifyApiKeyParams) (string, error) {
 	// Create token
 	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
@@ -93,31 +98,38 @@ func (a *Service) CreateApiKey(ctx context.Context, userId int64, role models.Ro
 	// Hash the token
 	hasher := sha256.New()
 	hasher.Write([]byte(token))
-	apiKey := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
+	apiKey := base64.RawStdEncoding.EncodeToString(hasher.Sum(nil))
 
-	// Set expiration to a far future date
-	farFuture := time.Date(9999, 12, 31, 23, 59, 59, 999999999, time.UTC)
-	expiresAtTs := pgtype.Timestamptz{
-		Time:  farFuture,
-		Valid: true,
-	}
-
-	session, err := a.db.InsertToken(ctx, database.InsertTokenParams{
-		Token:     apiKey,
-		ExpiresAt: expiresAtTs,
-		UserID:    userId,
-		Role:      role.String(),
-	})
+	// Create quote key
+	quoteBytes := make([]byte, 32)
+	_, err = rand.Read(quoteBytes)
 	if err != nil {
 		return "", err
 	}
-	a.SessionCache.Set(token, database.GetSessionRow(session), time.Hour)
-	return token, nil
+	quoteKey := base64.RawURLEncoding.EncodeToString(quoteBytes)
+
+	params.ApiKey = apiKey
+	params.QuoteKey = quoteKey
+	apiKeyInfo, err := a.db.CreateShopifyApiKey(ctx, params)
+	if err != nil {
+		return "", err
+	}
+
+	// Insert in key cache
+	a.apiKeyCache.SetWithDefaultExpiration(apiKey, database.GetApiKeyInfoRow(apiKeyInfo))
+	a.quoteKeyCache.SetWithDefaultExpiration(quoteKey, database.GetQuoteKeyInfoRow{
+		BusinessID:        apiKeyInfo.BusinessID,
+		PickupAddress:     apiKeyInfo.PickupAddress,
+		PickupWindowStart: apiKeyInfo.PickupWindowStart,
+		PickupWindowEnd:   apiKeyInfo.PickupWindowEnd,
+	})
+
+	return apiKey, nil
 }
 
 func (a *Service) ValidateToken(ctx context.Context, token string) (database.GetSessionRow, bool) {
 
-	if session, ok := a.SessionCache.Get(token); ok {
+	if session, ok := a.sessionCache.Get(token); ok {
 		return session, true
 	}
 
@@ -127,7 +139,7 @@ func (a *Service) ValidateToken(ctx context.Context, token string) (database.Get
 		return database.GetSessionRow{}, false
 	}
 
-	a.SessionCache.Set(token, session, max(sessionCacheExpiration, time.Until(session.ExpiresAt.Time)))
+	a.sessionCache.Set(token, session, max(sessionCacheExpiration, time.Until(session.ExpiresAt.Time)))
 
 	return session, true
 }

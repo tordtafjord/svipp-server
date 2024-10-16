@@ -14,7 +14,7 @@ import (
 
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
-	h := handlers.NewHandler(s.services)
+	h := handlers.NewHandler(s.services, s.config.BizHost)
 	authMiddleware := NewAuthMiddleware(s.services.AuthService)
 
 	setupBaseMiddlewares(mux)

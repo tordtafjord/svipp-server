@@ -8,6 +8,7 @@ import (
 	"google.golang.org/api/option"
 	gmaps "googlemaps.github.io/maps"
 	"log"
+	"strconv"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
 	"svipp-server/internal/env"
@@ -28,6 +29,7 @@ type Services struct {
 type Config struct {
 	HTTPPort int
 	IsProd   bool
+	BizHost  string
 }
 
 func New() (*Config, *Services, error) {
@@ -54,6 +56,12 @@ func loadConfig() (*Config, error) {
 		return nil, err
 	}
 	cfg.HTTPPort = env.GetInt("PORT", 8080)
+
+	if cfg.IsProd {
+		cfg.BizHost = "bedrift.svipp.app"
+	} else {
+		cfg.BizHost = "bedrift.localhost:" + strconv.Itoa(cfg.HTTPPort)
+	}
 
 	return cfg, nil
 }

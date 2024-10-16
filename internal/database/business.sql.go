@@ -10,17 +10,23 @@ import (
 )
 
 const createBusiness = `-- name: CreateBusiness :exec
-INSERT INTO business (name, org_id, address)
-VALUES ($1, $2, $3)
+INSERT INTO business (id, name, org_id, address)
+VALUES ($1, $2, $3, $4)
 `
 
 type CreateBusinessParams struct {
+	ID      int64  `json:"id"`
 	Name    string `json:"name"`
 	OrgID   int64  `json:"orgId"`
 	Address string `json:"address"`
 }
 
 func (q *Queries) CreateBusiness(ctx context.Context, arg CreateBusinessParams) error {
-	_, err := q.db.Exec(ctx, createBusiness, arg.Name, arg.OrgID, arg.Address)
+	_, err := q.db.Exec(ctx, createBusiness,
+		arg.ID,
+		arg.Name,
+		arg.OrgID,
+		arg.Address,
+	)
 	return err
 }
