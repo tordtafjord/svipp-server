@@ -154,7 +154,7 @@ func setupStaticServing(router *chi.Mux) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fileServer := http.FileServer(http.FS(staticSubFS))
-	router.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	cachedFileServer := CacheControlMiddleware(http.FileServer(http.FS(staticSubFS)))
+	router.Handle("/static/*", http.StripPrefix("/static/", cachedFileServer))
 
 }

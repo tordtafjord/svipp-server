@@ -117,3 +117,11 @@ func LogRequestBody(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func CacheControlMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set cache-control header
+		w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+		next.ServeHTTP(w, r)
+	})
+}
