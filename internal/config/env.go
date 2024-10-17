@@ -1,4 +1,4 @@
-package env
+package config
 
 import (
 	"github.com/joho/godotenv"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func LoadEnv(isProd bool) error {
+func loadEnv(isProd bool) error {
 	var envFile string
 	if isProd {
 		envFile = ".env"
@@ -19,7 +19,7 @@ func LoadEnv(isProd bool) error {
 	return nil
 }
 
-func GetString(key, defaultValue string) string {
+func getEnvString(key, defaultValue string) string {
 	value, exists := os.LookupEnv(key)
 	if !exists {
 		return defaultValue
@@ -28,7 +28,7 @@ func GetString(key, defaultValue string) string {
 	return value
 }
 
-func GetInt(key string, defaultValue int) int {
+func getEnvInt(key string, defaultValue int) int {
 	value, exists := os.LookupEnv(key)
 	if !exists {
 		return defaultValue
@@ -42,7 +42,7 @@ func GetInt(key string, defaultValue int) int {
 	return intValue
 }
 
-func GetFloat(key string, defaultValue float64) float64 {
+func getEnvFloat(key string, defaultValue float64) float64 {
 	value, exists := os.LookupEnv(key)
 	if !exists {
 		return defaultValue
@@ -56,7 +56,7 @@ func GetFloat(key string, defaultValue float64) float64 {
 	return floatValue
 }
 
-func GetBool(key string, defaultValue bool) bool {
+func getEnvBool(key string, defaultValue bool) bool {
 	value, exists := os.LookupEnv(key)
 	if !exists {
 		return defaultValue

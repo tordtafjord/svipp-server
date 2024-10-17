@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/database"
-	"svipp-server/internal/env"
 	"svipp-server/pkg/maps"
 	"svipp-server/pkg/sms"
 	"svipp-server/sql"
@@ -49,13 +48,13 @@ func New() (*Config, *Services, error) {
 
 func loadConfig() (*Config, error) {
 	cfg := &Config{}
-	cfg.IsProd = env.GetBool("IS_PRODUCTION", false)
+	cfg.IsProd = getEnvBool("IS_PRODUCTION", false)
 	log.Printf("Svipp server starting up in production-mode: %t", cfg.IsProd)
-	err := env.LoadEnv(cfg.IsProd)
+	err := loadEnv(cfg.IsProd)
 	if err != nil {
 		return nil, err
 	}
-	cfg.HTTPPort = env.GetInt("PORT", 8080)
+	cfg.HTTPPort = getEnvInt("PORT", 8080)
 
 	if cfg.IsProd {
 		cfg.BizHost = "bedrift.svipp.app"
@@ -70,7 +69,7 @@ func InitializeServices(cfg *Config) (*Services, error) {
 	services := &Services{}
 
 	// Initialize Maps client
-	mapsClient, err := gmaps.NewClient(gmaps.WithAPIKey(env.GetString("GOOGLE_MAPS_API_KEY", "")))
+	mapsClient, err := gmaps.NewClient(gmaps.WithAPIKey(getEnvString("GOOGLE_MAPS_API_KEY", "")))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create google maps client: %w", err)
 	}
@@ -78,9 +77,9 @@ func InitializeServices(cfg *Config) (*Services, error) {
 
 	// Initialize SMS client
 	services.SmsClient = sms.NewTwilioClient(
-		env.GetString("TWILIO_ACCOUNT_SID", ""),
-		env.GetString("TWILIO_AUTH_TOKEN", ""),
-		env.GetString("TWILIO_MESSAGING_SERVICE_SID", ""),
+		getEnvString("TWILIO_ACCOUNT_SID", ""),
+		getEnvString("TWILIO_AUTH_TOKEN", ""),
+		getEnvString("TWILIO_MESSAGING_SERVICE_SID", ""),
 		cfg.IsProd,
 	)
 
@@ -93,7 +92,7 @@ func InitializeServices(cfg *Config) (*Services, error) {
 	services.FirebaseApp = firebaseApp
 
 	// Initialize Database
-	dbUrl := env.GetString("DATABASE_URL", "postgres://svipp@localhost:5432/svipp?sslmode=disable")
+	dbUrl := getEnvString("DATABASE_URL", "postgres://svipp@localhost:5432/svipp?sslmode=disable")
 	dbPool, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database pool: %w", err)
@@ -102,7 +101,7 @@ func InitializeServices(cfg *Config) (*Services, error) {
 	services.DBPool = dbPool
 	services.DB = database.New(dbPool)
 
-	if env.GetBool("DB_AUTOMIGRATE", true) {
+	if getEnvBool("DB_AUTOMIGRATE", true) {
 		if err := sql.RunMigrations(dbPool); err != nil {
 			return nil, fmt.Errorf("failed to run database migrations: %w", err)
 		}
