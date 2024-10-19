@@ -15,26 +15,17 @@ import (
 
 type AuthMiddleware struct {
 	authService *auth.Service
+	domain      string
 }
 
-func NewAuthMiddleware(authService *auth.Service) *AuthMiddleware {
-	return &AuthMiddleware{authService: authService}
+func NewAuthMiddleware(authService *auth.Service, domain string) *AuthMiddleware {
+	return &AuthMiddleware{authService: authService, domain: domain}
 }
 
 func (a *AuthMiddleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the JWT token from the cookie
-		cookie, err := r.Cookie(auth.CookieName)
-		if err != nil {
-			log.Printf("No cookie present %v", cookie)
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		tokenString := cookie.Value
-		session, ok := a.authService.ValidateToken(r.Context(), tokenString)
+		session, ok := a.authService.IsAuthenticated(r)
 		if !ok {
-			log.Printf("Token not valid %v", tokenString)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -44,9 +35,37 @@ func (a *AuthMiddleware) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (a *AuthMiddleware) AuthOrUnauth(authHandler func(http.ResponseWriter, *http.Request),
+	unauthHandler func(http.ResponseWriter, *http.Request),
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, ok := a.authService.IsAuthenticated(r)
+		if !ok {
+			unauthHandler(w, r)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), auth.SessionContextKey, session)
+		authHandler(w, r.WithContext(ctx))
+	}
+}
+
+func (a *AuthMiddleware) RedirectIfAuthenticated(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, ok := a.authService.IsAuthenticated(r)
+		if !ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// User is authenticated, redirect to "/"
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
 func (a *AuthMiddleware) ApiKeyAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the JWT token directly from the Authorization header
+		// Get the session id directly from the Authorization header
 		apiKey := r.Header.Get("Authorization")
 		if apiKey == "" {
 			log.Println("No Authorization header present")

@@ -135,21 +135,17 @@ func (a *Service) ValidateToken(ctx context.Context, token string) (database.Get
 
 	session, err := a.db.GetSession(ctx, token)
 	if err != nil {
-		log.Printf("Failed to fetch session from db %v", err)
 		return database.GetSessionRow{}, false
 	}
 
 	a.sessionCache.Set(token, session, max(sessionCacheExpiration, time.Until(session.ExpiresAt.Time)))
-
 	return session, true
 }
 
-func (a *Service) IsAuthenticated(r *http.Request) bool {
+func (a *Service) IsAuthenticated(r *http.Request) (database.GetSessionRow, bool) {
 	cookie, err := r.Cookie(CookieName)
 	if err != nil {
-		log.Printf("User not authenticated, no cookie exists %v", err)
-		return false
+		return database.GetSessionRow{}, false
 	}
-	_, ok := a.ValidateToken(r.Context(), cookie.Value)
-	return ok
+	return a.ValidateToken(r.Context(), cookie.Value)
 }

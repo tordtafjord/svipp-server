@@ -12,7 +12,8 @@ import (
 )
 
 type createUserRequest struct {
-	Name            *string `json:"name" validate:"omitempty,min=2,max=100"`
+	FirstName       *string `json:"firstName" validate:"omitempty,min=2,max=100"`
+	LastName        *string `json:"lastName" validate:"omitempty,min=2,max=100"`
 	Phone           string  `json:"phone" validate:"required,e164"`
 	Email           string  `json:"email" validate:"required,email"`
 	Password        string  `json:"password" validate:"required,min=8,max=64"`
@@ -35,9 +36,11 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 			httputil.BadRequestResponse(writer, err, true)
 			return
 		}
-		name := request.FormValue("name")
+		firstName := request.FormValue("firstName")
+		lastName := request.FormValue("lastName")
 		phone := fmt.Sprintf("+%s%s", request.FormValue("countryCode"), request.FormValue("phone"))
-		params.Name = &name
+		params.FirstName = &firstName
+		params.LastName = &lastName
 		params.Phone = phone
 		params.Email = request.FormValue("email")
 		params.Password = request.FormValue("password")
@@ -57,8 +60,8 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 
 	ctx := request.Context()
 	user, err := h.db.CreateUser(ctx, database.CreateUserParams{
-		FirstName:   params.Name,
-		LastName:    nil,
+		FirstName:   params.FirstName,
+		LastName:    params.LastName,
 		Phone:       &params.Phone,
 		Email:       &params.Email,
 		Password:    &pswdHash,
@@ -79,7 +82,7 @@ func (h *Handler) CreateUser(writer http.ResponseWriter, request *http.Request) 
 
 	cookie := auth.CreateCookie(sessionId)
 	http.SetCookie(writer, &cookie)
-	writer.Header().Set("HX-Redirect", "/home")
+	writer.Header().Set("HX-Redirect", "/")
 }
 
 func (h *Handler) GetMyAccount(writer http.ResponseWriter, r *http.Request) {

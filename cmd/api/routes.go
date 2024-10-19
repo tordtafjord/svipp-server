@@ -15,7 +15,7 @@ import (
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
 	h := handlers.NewHandler(s.services, s.config.Domain)
-	authMiddleware := NewAuthMiddleware(s.services.AuthService)
+	authMiddleware := NewAuthMiddleware(s.services.AuthService, s.config.Domain)
 
 	setupBaseMiddlewares(mux)
 	setupStaticServing(mux)
@@ -50,19 +50,22 @@ func (s *server) routes() http.Handler {
 
 func setupWebRoutes(h *handlers.Handler, authMiddleware *AuthMiddleware, prod bool) http.Handler {
 	r := chi.NewRouter()
-	r.Get("/", h.IndexHandler)
-	r.Get("/login", h.LoginPage)
+	r.Get("/", authMiddleware.AuthOrUnauth(h.HomePage, h.FrontPage))
+	r.Get("/login", authMiddleware.RedirectIfAuthenticated(h.LoginPage))
+	r.Get("/logout", h.Logout) // Add this line for the logout route
 	r.Get("/orders/{uuid}", h.SingleOrderPage)
-	r.Group(func(r chi.Router) {
-		r.Use(authMiddleware.AuthMiddleware)
-		r.Get("/logout", h.Logout) // Add this line for the logout route
-	})
+
+	//r.Group(func(r chi.Router) {
+	//	r.Use(authMiddleware.AuthMiddleware)
+	//})
 
 	r.Group(func(r chi.Router) {
 		if prod {
 			r.Use(authMiddleware.AuthMiddleware, RequireRole(models.RoleAdmin))
+			r.Get("/signup", h.SignupPage)
+		} else {
+			r.Get("/signup", authMiddleware.RedirectIfAuthenticated(h.SignupPage))
 		}
-		r.Get("/signup", h.SignupPage)
 	})
 
 	return r

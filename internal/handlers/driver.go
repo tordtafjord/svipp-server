@@ -25,7 +25,7 @@ func (h *Handler) CreateDriver(writer http.ResponseWriter, request *http.Request
 
 	var lastName string
 	user, err := h.db.CreateUser(request.Context(), database.CreateUserParams{
-		FirstName:   params.Name,
+		FirstName:   params.FirstName,
 		LastName:    &lastName,
 		Phone:       &params.Phone,
 		Email:       &params.Email,

@@ -13,14 +13,6 @@ import (
 	"svipp-server/internal/httputil"
 )
 
-func (h *Handler) IndexHandler(writer http.ResponseWriter, request *http.Request) {
-	if h.authService.IsAuthenticated(request) {
-		h.HomePage(writer, request)
-		return
-	}
-	h.FrontPage(writer, request)
-}
-
 func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 	err := pages.FrontPage(templ.SafeURL(h.domain)).Render(r.Context(), w)
 	if err != nil {
@@ -36,11 +28,6 @@ func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
-	if h.authService.IsAuthenticated(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
 	err := pages.Login().Render(r.Context(), w)
 	if err != nil {
 		httputil.InternalServerError(w, err)
@@ -49,11 +36,6 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
-	if h.authService.IsAuthenticated(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
 	var page templ.Component
 	if r.Host != h.businessSubDomain {
 		page = pages.UserSignup()
