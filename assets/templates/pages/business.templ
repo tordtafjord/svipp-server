@@ -1,0 +1,20 @@
+package pages
+
+import (
+"svipp-server/assets/templates/layouts"
+"svipp-server/assets/templates/forms/business"
+)
+
+func GetLoginURL(domain string) templ.SafeURL {
+    if domain == "localhost:8081" {
+        return templ.SafeURL("http://" + domain + "/login")
+    }
+    return templ.SafeURL("https://bedrift." + domain + "/login")
+}
+
+
+templ BusinessSignup() {
+    @layouts.Base("Svipp - Opprett BedriftsKonto") {
+        @business.SignupForm()
+    }
+}

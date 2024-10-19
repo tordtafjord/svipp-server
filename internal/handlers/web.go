@@ -2,27 +2,37 @@ package handlers
 
 import (
 	"encoding/hex"
+	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
+	"svipp-server/assets/templates/pages"
 	"svipp-server/internal/auth"
 	"svipp-server/internal/httputil"
 )
 
-func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	if h.authService.IsAuthenticated(r) {
-		h.FrontPage(w, r)
+func (h *Handler) IndexHandler(writer http.ResponseWriter, request *http.Request) {
+	if h.authService.IsAuthenticated(request) {
+		h.HomePage(writer, request)
 		return
 	}
+	h.FrontPage(writer, request)
+}
 
-	data := map[string]interface{}{
-		"BizHost": template.URL("//" + h.bizHost),
+func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
+	err := pages.FrontPage(templ.SafeURL(h.domain)).Render(r.Context(), w)
+	if err != nil {
+		httputil.InternalServerError(w, err)
 	}
+}
 
-	httputil.HtmxResponse(w, http.StatusOK, "home.gohtml", data)
+func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
+	err := pages.HomePage().Render(r.Context(), w)
+	if err != nil {
+		httputil.InternalServerError(w, err)
+	}
 }
 
 func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -31,19 +41,30 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.HtmxResponse(w, http.StatusOK, "login.gohtml", nil)
-}
-
-func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
-	httputil.HtmxResponse(w, http.StatusOK, "frontpage.gohtml", nil)
+	err := pages.Login().Render(r.Context(), w)
+	if err != nil {
+		httputil.InternalServerError(w, err)
+		return
+	}
 }
 
 func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
-	if r.Host != h.bizHost {
-		httputil.HtmxResponse(w, http.StatusOK, "signup.gohtml", nil)
+	if h.authService.IsAuthenticated(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	httputil.HtmxResponse(w, http.StatusOK, "biz-signup.gohtml", nil)
+
+	var page templ.Component
+	if r.Host != h.businessSubDomain {
+		page = pages.UserSignup()
+	} else {
+		page = pages.BusinessSignup()
+	}
+
+	err := page.Render(r.Context(), w)
+	if err != nil {
+		httputil.InternalServerError(w, err)
+	}
 }
 
 func (h *Handler) SingleOrderPage(w http.ResponseWriter, r *http.Request) {

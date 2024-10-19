@@ -26,6 +26,24 @@ func BadRequestResponse(writer http.ResponseWriter, err error, isHtmx bool) {
 	HtmxResponse(writer, http.StatusBadRequest, "error.gohtml", multipleErrorsResponse{Error: []string{"Bad Request"}})
 }
 
+func InternalServerError(w http.ResponseWriter, err error) {
+	// Get the caller's file and line number
+	_, file, line, ok := runtime.Caller(1)
+	if ok {
+		// Extract just the filename from the full path
+		parts := strings.Split(file, "/")
+		file = parts[len(parts)-1]
+	}
+	detailedLogMessage := fmt.Sprintf(
+		"Server Error [%d] - %s\nLocation: %s:%d\n",
+		http.StatusInternalServerError, err, file, line,
+	)
+	// Log the detailed message
+	log.Printf(detailedLogMessage)
+
+	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+}
+
 func InternalServerErrorResponse(writer http.ResponseWriter, logMessage string, err error, isHtmx bool) {
 	// Get the caller's file and line number
 	_, file, line, ok := runtime.Caller(1)
@@ -98,10 +116,5 @@ func JSONResponse(writer http.ResponseWriter, code int, payload interface{}) {
 func HtmxResponse(writer http.ResponseWriter, code int, template string, data interface{}) {
 	writer.Header().Set("Content-Type", "text/html")
 	writer.WriteHeader(code)
-	err := Tmpl.ExecuteTemplate(writer, template, data)
-	if err != nil {
-		log.Printf("Failed executing template: %v", err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// FIXME
 }

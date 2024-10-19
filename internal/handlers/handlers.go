@@ -11,22 +11,24 @@ import (
 )
 
 type Handler struct {
-	db          *database.Queries
-	authService *auth.Service
-	smsService  *sms.TwilioClient
-	mapsService *maps.MapsService
-	bizHost     string
+	db                *database.Queries
+	authService       *auth.Service
+	smsService        *sms.TwilioClient
+	mapsService       *maps.MapsService
+	domain            string
+	businessSubDomain string
 }
 
 var validate *validator.Validate
 
-func NewHandler(srv *config.Services, bizHost string) *Handler {
+func NewHandler(srv *config.Services, domain string) *Handler {
 	return &Handler{
-		db:          srv.DB,
-		authService: srv.AuthService,
-		smsService:  srv.SmsClient,
-		mapsService: srv.MapsClient,
-		bizHost:     bizHost,
+		db:                srv.DB,
+		authService:       srv.AuthService,
+		smsService:        srv.SmsClient,
+		mapsService:       srv.MapsClient,
+		domain:            domain,
+		businessSubDomain: "bedrift." + domain,
 	}
 }
 

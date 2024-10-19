@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./assets/templates/*.{html,tmpl,gohtml}",
-    // Add any other template files you're using
+    "./assets/templates/**/*.{html,templ}",
+    "./assets/templates/**/*.go", // Include generated Go files if they contain Tailwind classes
   ],
   theme: {
     extend: {},

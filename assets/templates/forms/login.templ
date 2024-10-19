@@ -1,11 +1,11 @@
-{{$Title := "Svipp - Logg Inn"}}
-{{ template "header.gohtml" $Title }}
+package forms
 
+templ LoginForm() {
 <div class="bg-base-200 min-h-screen flex items-center justify-center">
     <div class="card w-96 bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
         <div class="card-body">
             <h1 class="text-2xl font-bold mb-6 text-center">Logg inn</h1>
-            <form hx-post="api/auth" hx-target="#notifications" hx-indicator="#loading">
+            <form hx-post="api/auth" hx-target="#toasts" hx-indicator="#loading">
                 <div class="form-control mb-4">
                     <label for="email" class="label">
                         <span class="label-text">Email</span>
@@ -22,18 +22,16 @@
                     Logg inn
                 </button>
             </form>
-            <div id="login-response"></div>
-            {{ template "loading-indicator.gohtml" }}
-            <!--div class="mt-4 text-center">
-                <a href="#" class="link link-primary text-sm">Forgot password?</a>
-            </div>
+            // TODO: Legg til når passord kan endres
+            //<div class="mt-4 text-center">
+            //    <a href="#" class="link link-primary text-sm">Forgot password?</a>
+            //</div>
             <div class="mt-6 text-center">
                 <p class="text-sm">Har du ikke en konto?
                     <a href="/signup" class="link link-primary">Opprett konto her</a>
                 </p>
-            </div-->
+            </div>
         </div>
     </div>
 </div>
-
-{{ template "footer.gohtml" }}
+}

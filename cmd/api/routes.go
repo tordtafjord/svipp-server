@@ -14,7 +14,7 @@ import (
 
 func (s *server) routes() http.Handler {
 	mux := chi.NewRouter()
-	h := handlers.NewHandler(s.services, s.config.BizHost)
+	h := handlers.NewHandler(s.services, s.config.Domain)
 	authMiddleware := NewAuthMiddleware(s.services.AuthService)
 
 	setupBaseMiddlewares(mux)
@@ -50,12 +50,11 @@ func (s *server) routes() http.Handler {
 
 func setupWebRoutes(h *handlers.Handler, authMiddleware *AuthMiddleware, prod bool) http.Handler {
 	r := chi.NewRouter()
-	r.Get("/", h.HomePage)
+	r.Get("/", h.IndexHandler)
 	r.Get("/login", h.LoginPage)
 	r.Get("/orders/{uuid}", h.SingleOrderPage)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware.AuthMiddleware)
-		r.Get("/home", h.FrontPage)
 		r.Get("/logout", h.Logout) // Add this line for the logout route
 	})
 

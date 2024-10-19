@@ -1,11 +1,11 @@
-{{$Title := "Svipp - Opprett BedriftsKonto"}}
-{{ template "header.gohtml" $Title }}
+package business
 
+templ SignupForm() {
 <div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
     <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full max-w-4xl">
         <div class="card-body">
             <h1 class="card-title text-2xl justify-center mb-6">Opprett Bedriftskonto</h1>
-            <form hx-post="api/business" hx-target="#notifications" hx-indicator="#loading">
+            <form hx-post="api/business" hx-target="#toasts" hx-indicator="#loading">
                 <div class="flex flex-col md:flex-row md:space-x-8">
                     <!-- Left pane: Personal details -->
                     <div class="w-full md:w-1/2">
@@ -75,10 +75,7 @@
                     <a href="/login" class="link link-primary">Logg inn</a>
                 </p>
             </div>
-
-        {{ template "loading-indicator.gohtml" }}
+        </div>
     </div>
 </div>
-</div>
-
-{{ template "footer.gohtml" }}
+}

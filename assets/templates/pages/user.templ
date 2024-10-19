@@ -1,0 +1,12 @@
+package pages
+
+import (
+"svipp-server/assets/templates/layouts"
+"svipp-server/assets/templates/forms/user"
+)
+
+templ UserSignup() {
+    @layouts.Base("Svipp - Opprett Konto") {
+        @user.SignupForm()
+    }
+}

@@ -5,9 +5,7 @@ go 1.23.0
 require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/go-chi/chi/v5 v5.1.0
-	github.com/go-chi/httprate v0.14.1
 	github.com/go-playground/validator/v10 v10.22.0
-	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.22.0
@@ -24,7 +22,7 @@ require (
 	cloud.google.com/go/iam v1.1.5 // indirect
 	cloud.google.com/go/longrunning v0.5.4 // indirect
 	cloud.google.com/go/storage v1.36.0 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/a-h/templ v0.2.778 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -50,7 +48,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

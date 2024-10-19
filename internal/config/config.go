@@ -28,7 +28,7 @@ type Services struct {
 type Config struct {
 	HTTPPort int
 	IsProd   bool
-	BizHost  string
+	Domain   string
 }
 
 func New() (*Config, *Services, error) {
@@ -57,9 +57,9 @@ func loadConfig() (*Config, error) {
 	cfg.HTTPPort = getEnvInt("PORT", 8080)
 
 	if cfg.IsProd {
-		cfg.BizHost = "bedrift.svipp.app"
+		cfg.Domain = "svipp.app"
 	} else {
-		cfg.BizHost = "bedrift.localhost:" + strconv.Itoa(cfg.HTTPPort)
+		cfg.Domain = "localhost:" + strconv.Itoa(cfg.HTTPPort)
 	}
 
 	return cfg, nil
