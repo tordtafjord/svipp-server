@@ -1,0 +1,10 @@
+package layouts
+
+templ AuthenticatedLayout(title string) {
+    @Base(title) {
+        @NavBar()
+        <div id="mainContent">
+        { children... }
+        </div>
+    }
+}

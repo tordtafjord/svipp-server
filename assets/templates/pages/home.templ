@@ -1,11 +1,14 @@
 package pages
 
 import "svipp-server/assets/templates/layouts"
-import "svipp-server/assets/templates/forms/business"
 
-templ HomePage() {
-    @layouts.Base("Svipp") {
-    @layouts.NavBar()
-    @business.GenerateApiKeyForm()
+templ HomePage(isHtmx bool) {
+    if !isHtmx {
+        @layouts.AuthenticatedLayout("Svipp") {
+            <h1 id="auth-status">Authenticated</h1>
+        }
+    } else {
+        <title>Svipp</title>
+        <h1 id="auth-status">Authenticated</h1>
     }
 }

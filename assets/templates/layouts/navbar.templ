@@ -3,7 +3,13 @@ package layouts
 templ NavBar() {
     <div class="navbar bg-base-100">
       <div class="flex-1">
-        <a class="btn btn-ghost text-xl">Svipp</a>
+        <a class="btn btn-ghost text-xl"
+        hx-get="/"
+                         hx-target="#mainContent"
+                         hx-swap="innerHTML"
+                         hx-push-url="true"
+                         hx-trigger="click">
+                         Svipp</a>
       </div>
       <div class="flex-none">
         <ul class="menu menu-horizontal px-1">
@@ -17,6 +23,16 @@ templ NavBar() {
           //    </ul>
           //  </details>
           //</li>
+            <li>
+              <a hx-get="/create-shopify-config"
+                 hx-target="#mainContent"
+                 hx-swap="innerHTML"
+                 hx-push-url="true"
+                 hx-trigger="click">
+                Shopify
+              </a>
+            </li>
+
           <li><a href="/logout">Logg ut</a></li>
         </ul>
       </div>

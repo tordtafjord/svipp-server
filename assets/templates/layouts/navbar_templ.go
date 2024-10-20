@@ -29,7 +29,7 @@ func NavBar() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"navbar bg-base-100\"><div class=\"flex-1\"><a class=\"btn btn-ghost text-xl\">Svipp</a></div><div class=\"flex-none\"><ul class=\"menu menu-horizontal px-1\"><li><a href=\"/logout\">Logg ut</a></li></ul></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"navbar bg-base-100\"><div class=\"flex-1\"><a class=\"btn btn-ghost text-xl\" hx-get=\"/\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\">Svipp</a></div><div class=\"flex-none\"><ul class=\"menu menu-horizontal px-1\"><li><a hx-get=\"/create-shopify-config\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\">Shopify</a></li><li><a href=\"/logout\">Logg ut</a></li></ul></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

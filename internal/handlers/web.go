@@ -21,7 +21,16 @@ func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	err := pages.HomePage().Render(r.Context(), w)
+	isHxReq := httputil.IsHxRequest(r)
+	err := pages.HomePage(isHxReq).Render(r.Context(), w)
+	if err != nil {
+		httputil.InternalServerError(w, err)
+	}
+}
+
+func (h *Handler) CreateShopifyApiConfigPage(w http.ResponseWriter, r *http.Request) {
+	isHxReq := httputil.IsHxRequest(r)
+	err := pages.CreateApiConfigPage(isHxReq).Render(r.Context(), w)
 	if err != nil {
 		httputil.InternalServerError(w, err)
 	}
@@ -36,14 +45,15 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SignupPage(w http.ResponseWriter, r *http.Request) {
-	var page templ.Component
-	if r.Host != h.businessSubDomain {
-		page = pages.UserSignup()
-	} else {
-		page = pages.BusinessSignup()
-	}
+	// TODO user signup not enabled yet
+	//var page templ.Component
+	//if r.Host != h.businessSubDomain {
+	//	page = pages.UserSignup()
+	//} else {
+	//	page = pages.BusinessSignup()
+	//}
 
-	err := page.Render(r.Context(), w)
+	err := pages.BusinessSignup().Render(r.Context(), w)
 	if err != nil {
 		httputil.InternalServerError(w, err)
 	}

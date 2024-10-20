@@ -55,9 +55,10 @@ func setupWebRoutes(h *handlers.Handler, authMiddleware *AuthMiddleware, prod bo
 	r.Get("/logout", h.Logout) // Add this line for the logout route
 	r.Get("/orders/{uuid}", h.SingleOrderPage)
 
-	//r.Group(func(r chi.Router) {
-	//	r.Use(authMiddleware.AuthMiddleware)
-	//})
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware.AuthMiddleware, RequireRole(models.RoleBusiness, models.RoleAdmin))
+		r.Get("/create-shopify-config", h.CreateShopifyApiConfigPage)
+	})
 
 	r.Group(func(r chi.Router) {
 		if prod {
