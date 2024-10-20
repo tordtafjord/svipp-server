@@ -64,7 +64,7 @@ func FrontPage(domain templ.SafeURL) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"btn btn-primary\">Login <span class=\"block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-primary\"></span></a></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"btn btn-primary\">Logg inn <span class=\"block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-primary\"></span></a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
