@@ -1,7 +1,8 @@
 package business
 
 templ GenerateApiKeyForm() {
-<div class="card bg-base-100 shadow-xl max-w-lg mx-auto mt-8">
+<div class="flex justify-center min-h-screen">
+<div class="card bg-base-100 shadow-2xl max-w-lg">
   <div class="card-body">
     <h2 class="card-title mb-4">Ny Shopify Konfigurasjon</h2>
     <form class="space-y-4" hx-post="api/shopify-api" hx-target="#toasts" hx-indicator="#loading">
@@ -45,5 +46,6 @@ templ GenerateApiKeyForm() {
 
     </form>
   </div>
+</div>
 </div>
 }

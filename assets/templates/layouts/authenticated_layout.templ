@@ -3,8 +3,8 @@ package layouts
 templ AuthenticatedLayout(title string) {
     @Base(title) {
         @NavBar()
-        <div id="mainContent">
-        { children... }
+        <div id="mainContent" class="p-4 sm:p-6 md:p-8">
+          { children... }
         </div>
     }
 }
