@@ -6,16 +6,28 @@ import "svipp-server/assets/templates/components"
 templ HomePage(isHtmx bool) {
     if !isHtmx {
         @layouts.AuthenticatedLayout("Svipp - Hjem") {
-        <div class="flex flex-row">
-            @components.OrderListView()
-            @components.ShopifyConfigCard()
-        </div>
+            <div class="flex flex-col sm:flex-row justify-center">
+                <div class="order-3 sm:order-1">
+                    @components.OrderListView()
+                </div>
+                <!-- Divider for column layout -->
+                <div class="sm:hidden my-8 order-2 border-t border-gray-200"></div>
+                <div class="order-1 sm:order-2">
+                    @components.ShopifyConfigCard()
+                </div>
+            </div>
         }
     } else {
-        <title>Svipp - Hjem</title>
-        <div class="flex flex-row">
-            @components.OrderListView()
-            @components.ShopifyConfigCard()
-        </div>
+            <title>Svipp - Hjem</title>
+            <div class="flex flex-col sm:flex-row justify-center">
+                <div class="order-3 sm:order-1">
+                    @components.OrderListView()
+                </div>
+                <!-- Divider for column layout -->
+                <div class="sm:hidden my-8 order-2 border-t border-gray-200"></div>
+                <div class="order-1 sm:order-2">
+                    @components.ShopifyConfigCard()
+                </div>
+            </div>
     }
 }
