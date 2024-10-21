@@ -7,7 +7,7 @@ import (
 
 templ FrontPage(domain templ.SafeURL) {
     @layouts.Base("Svipp") {
-        <div class="min-h-screen bg-base-200 flex flex-col">
+        <div class="h-screen bg-base-200 flex flex-col">
             <div class="flex-grow flex justify-center items-center">
                 <a href={"//bedrift." + domain + "/login" }>
                     <h1 class="text-6xl font-bold text-primary bg-base-100 shadow-lg p-6 rounded-lg transition-all duration-300 hover:shadow-xl hover:scale-125">

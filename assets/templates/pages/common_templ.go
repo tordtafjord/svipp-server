@@ -46,7 +46,7 @@ func FrontPage(domain templ.SafeURL) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"min-h-screen bg-base-200 flex flex-col\"><div class=\"flex-grow flex justify-center items-center\"><a href=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"h-screen bg-base-200 flex flex-col\"><div class=\"flex-grow flex justify-center items-center\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
