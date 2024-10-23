@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"io"
 	"log"
 	"net/http"
@@ -74,13 +73,11 @@ func (a *AuthMiddleware) ApiKeyAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Hash the API key
-		hasher := sha256.New()
-		hasher.Write([]byte(apiKey))
-		hashedApiKey := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
+		var keyHash [32]byte = sha256.Sum256([]byte(apiKey))
 
-		session, ok := a.authService.ValidateToken(r.Context(), hashedApiKey)
+		session, ok := a.authService.ValidateApiKey(r.Context(), keyHash)
 		if !ok {
-			log.Printf("Token not valid %v", hashedApiKey)
+			log.Printf("Token not valid %v", keyHash)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}

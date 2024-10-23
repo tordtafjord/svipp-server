@@ -38,3 +38,11 @@ func GetSessionFromCtx(ctx context.Context) (database.GetSessionRow, error) {
 	}
 	return session, nil
 }
+
+func GetUserIdFromCtx(ctx context.Context) (int64, error) {
+	session, ok := ctx.Value(SessionContextKey).(database.GetSessionRow)
+	if !ok {
+		return 0, errors.New("session not found in context")
+	}
+	return session.UserID, nil
+}

@@ -18,6 +18,13 @@ type Business struct {
 	DeletedAt pgtype.Timestamptz `json:"deletedAt"`
 }
 
+type BusinessHour struct {
+	ApiKey    []byte      `json:"apiKey"`
+	DayOfWeek int32       `json:"dayOfWeek"`
+	OpensAt   pgtype.Time `json:"opensAt"`
+	ClosesAt  pgtype.Time `json:"closesAt"`
+}
+
 type Driver struct {
 	ID        int64              `json:"id"`
 	Status    string             `json:"status"`
@@ -76,17 +83,16 @@ type Rating struct {
 }
 
 type ShopifyApiConfig struct {
-	ApiKey             string             `json:"apiKey"`
+	ApiKey             []byte             `json:"apiKey"`
 	QuoteKey           string             `json:"quoteKey"`
 	BusinessID         int64              `json:"businessId"`
 	PickupAddress      *string            `json:"pickupAddress"`
 	PickupCoords       interface{}        `json:"pickupCoords"`
 	PickupInstructions *string            `json:"pickupInstructions"`
-	PickupWindowStart  pgtype.Timestamptz `json:"pickupWindowStart"`
-	PickupWindowEnd    pgtype.Timestamptz `json:"pickupWindowEnd"`
 	CreatedAt          pgtype.Timestamptz `json:"createdAt"`
 	UpdatedAt          pgtype.Timestamptz `json:"updatedAt"`
 	DeletedAt          pgtype.Timestamptz `json:"deletedAt"`
+	LocationName       *string            `json:"locationName"`
 }
 
 type Token struct {

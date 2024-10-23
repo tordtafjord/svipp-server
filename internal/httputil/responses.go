@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"svipp-server/assets/templates/components"
 )
 
 type errorResponse struct {
@@ -81,6 +82,22 @@ func ForbiddenResponse(writer http.ResponseWriter, isHtmx bool) {
 	// For HTMX requests, set the HX-Redirect header to redirect to the home page
 	writer.Header().Set("HX-Redirect", "/")
 	writer.WriteHeader(http.StatusForbidden)
+}
+
+func YellowToastResponse(w http.ResponseWriter, r *http.Request, errors []string) {
+	err := components.YellowToasts(errors).Render(r.Context(), w)
+	if err != nil {
+		log.Printf("Failed to render yellow toast template.")
+		InternalServerError(w, err)
+	}
+}
+
+func RedToastResponse(w http.ResponseWriter, r *http.Request, error string) {
+	err := components.RedToast(error).Render(r.Context(), w)
+	if err != nil {
+		log.Printf("Failed to render red toast template.")
+		InternalServerError(w, err)
+	}
 }
 
 func ErrorResponse(writer http.ResponseWriter, code int, logMessage, userMessage string, isHtmx bool) {

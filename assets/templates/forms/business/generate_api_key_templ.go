@@ -7,6 +7,7 @@ package business
 
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
+import "strconv"
 
 func GenerateApiKeyForm() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -29,25 +30,51 @@ func GenerateApiKeyForm() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex justify-center min-h-screen\"><div class=\"card bg-base-100 shadow-2xl max-w-lg\"><div class=\"card-body\"><h2 class=\"card-title mb-4\">Ny Shopify Konfigurasjon</h2><form class=\"space-y-4\" hx-post=\"api/shopify-api\" hx-target=\"#toasts\" hx-indicator=\"#loading\"><div class=\"form-control\"><label for=\"address\" class=\"label\">Adresse</label> <input type=\"text\" id=\"address\" name=\"address\" required class=\"input input-bordered w-full\"></div><div class=\"flex space-x-4\"><div class=\"form-control w-1/3\"><label for=\"zipCode\" class=\"label\">Postnummer</label> <input type=\"text\" id=\"zipCode\" name=\"zipCode\" required pattern=\"[0-9]*\" inputmode=\"numeric\" class=\"input input-bordered w-full\"></div><div class=\"form-control w-2/3\"><label for=\"city\" class=\"label\">Sted</label> <input type=\"text\" id=\"city\" name=\"city\" required class=\"input input-bordered w-full\"></div></div><div class=\"form-control\"><label class=\"label\" for=\"pickupInstructions\">Hente-Instruksjoner</label> <textarea id=\"pickupInstructions\" class=\"textarea textarea-bordered h-24\"></textarea></div><h3 class=\"card-title mb-4\">Vindu for henting av varer</h3>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex justify-center min-h-screen\"><div class=\"card bg-base-100 shadow-2xl max-w-lg\"><div class=\"card-body\"><h2 class=\"card-title mb-4\">Ny Shopify Konfigurasjon</h2><form class=\"space-y-4\" hx-post=\"api/shopify-api\" hx-target=\"#toasts\" hx-indicator=\"#loading\"><div class=\"form-control\"><label for=\"locationName\" class=\"label\">Lokasjonsnavn</label> <input type=\"text\" id=\"locationName\" name=\"locationName\" required class=\"input input-bordered w-full\"></div><div class=\"form-control\"><label class=\"label cursor-pointer justify-start gap-2\"><span class=\"label-text\">Bruk adresse sendt fra Shopify</span> <input type=\"checkbox\" id=\"useShopifyAddress\" class=\"checkbox\" onchange=\"toggleAddressFields()\"></label></div><div class=\"form-control\"><label for=\"address\" class=\"label\">Adresse</label> <input type=\"text\" id=\"address\" name=\"address\" required class=\"input input-bordered w-full\"></div><div class=\"flex space-x-4\"><div class=\"form-control w-1/3\"><label for=\"zipCode\" class=\"label\">Postnummer</label> <input type=\"text\" id=\"zipCode\" name=\"zipCode\" required pattern=\"[0-9]*\" inputmode=\"numeric\" class=\"input input-bordered w-full\"></div><div class=\"form-control w-2/3\"><label for=\"city\" class=\"label\">Sted</label> <input type=\"text\" id=\"city\" name=\"city\" required class=\"input input-bordered w-full\"></div></div><script>\n        function toggleAddressFields() {\n          const useShopifyAddress = document.getElementById('useShopifyAddress');\n          const addressFields = ['address', 'zipCode', 'city'];\n\n          addressFields.forEach(field => {\n            const element = document.getElementById(field);\n            element.disabled = useShopifyAddress.checked;\n          });\n        }\n      </script><div class=\"form-control\"><label class=\"label\" for=\"pickupInstructions\">Hente-Instruksjoner</label> <textarea id=\"pickupInstructions\" class=\"textarea textarea-bordered h-24\"></textarea></div><h3 class=\"card-title mb-4\">Vindu for henting av varer</h3>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, day := range []string{"Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"} {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"form-control\"><label class=\"label\" for=\"{day}-start\">")
+		for i, day := range []string{"Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"} {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"form-control\"><label class=\"label\" for=\"{i}Start\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(day)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/forms/business/generate_api_key.templ`, Line: 35, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/forms/business/generate_api_key.templ`, Line: 61, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label><div class=\"flex space-x-2\"><input type=\"time\" id=\"{day}Start\" class=\"input input-bordered w-1/2\"> <input type=\"time\" id=\"{day}End\" class=\"input input-bordered w-1/2\"></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</label><div class=\"flex space-x-2\"><input type=\"time\" id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(i) + "Start")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/forms/business/generate_api_key.templ`, Line: 63, Col: 64}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"input input-bordered w-1/2\"> <input type=\"time\" id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var4 string
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(i) + "End")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/forms/business/generate_api_key.templ`, Line: 64, Col: 62}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"input input-bordered w-1/2\"></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -1,4 +1,5 @@
 package business
+import "strconv"
 
 templ GenerateApiKeyForm() {
 <div class="flex justify-center min-h-screen">
@@ -6,6 +7,18 @@ templ GenerateApiKeyForm() {
   <div class="card-body">
     <h2 class="card-title mb-4">Ny Shopify Konfigurasjon</h2>
     <form class="space-y-4" hx-post="api/shopify-api" hx-target="#toasts" hx-indicator="#loading">
+      <div class="form-control">
+        <label for="locationName" class="label">Lokasjonsnavn</label>
+        <input type="text" id="locationName" name="locationName" required class="input input-bordered w-full">
+      </div>
+
+            <div class="form-control" >
+              <label class="label cursor-pointer justify-start gap-2">
+                <span class="label-text">Bruk adresse sendt fra Shopify</span>
+                <input type="checkbox" id="useShopifyAddress" class="checkbox" onchange="toggleAddressFields()">
+              </label>
+            </div>
+
       <div class="form-control">
         <label for="address" class="label">Adresse</label>
         <input type="text" id="address" name="address" required class="input input-bordered w-full">
@@ -22,6 +35,19 @@ templ GenerateApiKeyForm() {
         </div>
       </div>
 
+      <script>
+        function toggleAddressFields() {
+          const useShopifyAddress = document.getElementById('useShopifyAddress');
+          const addressFields = ['address', 'zipCode', 'city'];
+
+          addressFields.forEach(field => {
+            const element = document.getElementById(field);
+            element.disabled = useShopifyAddress.checked;
+          });
+        }
+      </script>
+
+
      <div class="form-control">
     <label class="label" for="pickupInstructions">
         Hente-Instruksjoner
@@ -30,12 +56,12 @@ templ GenerateApiKeyForm() {
 </div>
 
     <h3 class="card-title mb-4">Vindu for henting av varer</h3>
-    for _, day := range []string{"Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"} {
+    for i, day := range []string{"Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"} {
         <div class="form-control">
-            <label class="label" for="{day}-start">{ day }</label>
+            <label class="label" for="{i}Start">{ day }</label>
             <div class="flex space-x-2">
-                <input type="time" id="{day}Start" class="input input-bordered w-1/2" />
-                <input type="time" id="{day}End" class="input input-bordered w-1/2" />
+                <input type="time" id={strconv.Itoa(i) + "Start" } class="input input-bordered w-1/2" />
+                <input type="time" id={strconv.Itoa(i) + "End"} class="input input-bordered w-1/2" />
             </div>
         </div>
     }

@@ -28,7 +28,7 @@ const CookieName = "sessionId"
 type Service struct {
 	db            *database.Queries
 	sessionCache  *cache.Cache[string, database.GetSessionRow]
-	apiKeyCache   *cache.Cache[string, database.GetApiKeyInfoRow]
+	apiKeyCache   *cache.Cache[[32]byte, database.GetApiKeyInfoRow]
 	quoteKeyCache *cache.Cache[string, database.GetQuoteKeyInfoRow]
 }
 
@@ -36,7 +36,7 @@ func NewAuthService(db *database.Queries) *Service {
 	return &Service{
 		db:            db,
 		sessionCache:  cache.NewCache[string, database.GetSessionRow](sessionCacheExpiration, cacheCleanupInterval),
-		apiKeyCache:   cache.NewCache[string, database.GetApiKeyInfoRow](keyCacheExpiration, cacheCleanupInterval),
+		apiKeyCache:   cache.NewCache[[32]byte, database.GetApiKeyInfoRow](keyCacheExpiration, cacheCleanupInterval),
 		quoteKeyCache: cache.NewCache[string, database.GetQuoteKeyInfoRow](keyCacheExpiration, cacheCleanupInterval),
 	}
 }
@@ -86,45 +86,37 @@ func (a *Service) CreateSession(ctx context.Context, userId int64, role models.R
 	return token, nil
 }
 
-func (a *Service) CreateShopifyApiKey(ctx context.Context, params database.CreateShopifyApiKeyParams) (string, error) {
+func (a *Service) CreateShopifyApiKey(ctx context.Context, params database.CreateShopifyApiKeyParams) ([32]byte, string, error) {
 	// Create token
 	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
 	if err != nil {
-		return "", err
+		return [32]byte{}, "", err
 	}
-	token := base64.StdEncoding.EncodeToString(bytes)
+	token := base64.RawStdEncoding.EncodeToString(bytes)
 
 	// Hash the token
-	hasher := sha256.New()
-	hasher.Write([]byte(token))
-	apiKey := base64.RawStdEncoding.EncodeToString(hasher.Sum(nil))
+	var hash [32]byte = sha256.Sum256([]byte(token))
+	params.ApiKey = hash[:] // Store the returned hash in params.ApiKey
 
 	// Create quote key
-	quoteBytes := make([]byte, 32)
+	quoteBytes := make([]byte, 16)
 	_, err = rand.Read(quoteBytes)
 	if err != nil {
-		return "", err
+		return [32]byte{}, "", err
 	}
 	quoteKey := base64.RawURLEncoding.EncodeToString(quoteBytes)
 
-	params.ApiKey = apiKey
 	params.QuoteKey = quoteKey
 	apiKeyInfo, err := a.db.CreateShopifyApiKey(ctx, params)
 	if err != nil {
-		return "", err
+		return [32]byte{}, "", err
 	}
 
 	// Insert in key cache
-	a.apiKeyCache.SetWithDefaultExpiration(apiKey, database.GetApiKeyInfoRow(apiKeyInfo))
-	a.quoteKeyCache.SetWithDefaultExpiration(quoteKey, database.GetQuoteKeyInfoRow{
-		BusinessID:        apiKeyInfo.BusinessID,
-		PickupAddress:     apiKeyInfo.PickupAddress,
-		PickupWindowStart: apiKeyInfo.PickupWindowStart,
-		PickupWindowEnd:   apiKeyInfo.PickupWindowEnd,
-	})
+	a.apiKeyCache.SetWithDefaultExpiration(hash, database.GetApiKeyInfoRow(apiKeyInfo))
 
-	return apiKey, nil
+	return hash, token, nil
 }
 
 func (a *Service) ValidateToken(ctx context.Context, token string) (database.GetSessionRow, bool) {
@@ -139,6 +131,21 @@ func (a *Service) ValidateToken(ctx context.Context, token string) (database.Get
 	}
 
 	a.sessionCache.Set(token, session, max(sessionCacheExpiration, time.Until(session.ExpiresAt.Time)))
+	return session, true
+}
+
+func (a *Service) ValidateApiKey(ctx context.Context, keyHash [32]byte) (database.GetApiKeyInfoRow, bool) {
+
+	if session, ok := a.apiKeyCache.Get(keyHash); ok {
+		return session, true
+	}
+
+	session, err := a.db.GetApiKeyInfo(ctx, keyHash[:])
+	if err != nil {
+		return database.GetApiKeyInfoRow{}, false
+	}
+
+	a.apiKeyCache.Set(keyHash, session, keyCacheExpiration)
 	return session, true
 }
 

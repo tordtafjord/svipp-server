@@ -25,6 +25,12 @@ templ FrontPage(domain templ.SafeURL) {
     }
 }
 
+templ DynamicPage(component templ.Component) {
+    @layouts.AuthenticatedLayout("Svipp") {
+        @component
+    }
+}
+
 templ Login() {
     @layouts.Base("Svipp - Logg Inn") {
         @forms.LoginForm()

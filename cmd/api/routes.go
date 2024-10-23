@@ -55,6 +55,11 @@ func setupWebRoutes(h *handlers.Handler, authMiddleware *AuthMiddleware, prod bo
 	r.Get("/logout", h.Logout) // Add this line for the logout route
 	r.Get("/orders/{uuid}", h.SingleOrderPage)
 
+	// For testing templates
+	//r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+	//	pages.DynamicPage(components.ApiKeyModal("iubslfbnewoøincwe")).Render(r.Context(), w)
+	//})
+
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware.AuthMiddleware, RequireRole(models.RoleBusiness, models.RoleAdmin))
 		r.Get("/create-shopify-config", h.CreateShopifyApiConfigPage)
@@ -113,6 +118,12 @@ func setupApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mu
 		r.Get("/verify-token", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(LogRequestBody)
+		r.Use(a.AuthMiddleware, RequireRole(models.RoleBusiness, models.RoleAdmin))
+		r.Post("/business/shopify-config", h.CreateShopifyConfig)
 	})
 
 	return r
