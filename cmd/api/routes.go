@@ -107,6 +107,7 @@ func setupApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mu
 		r.Post("/business", h.CreateBusiness)
 	})
 
+	// Users routes
 	r.Group(func(r chi.Router) {
 		r.Use(LogRequestBody)
 		r.Use(a.AuthMiddleware)
@@ -120,6 +121,7 @@ func setupApiRoutes(h *handlers.Handler, a *AuthMiddleware, isProd bool) *chi.Mu
 		})
 	})
 
+	// Business Routes
 	r.Group(func(r chi.Router) {
 		r.Use(LogRequestBody)
 		r.Use(a.AuthMiddleware, RequireRole(models.RoleBusiness, models.RoleAdmin))

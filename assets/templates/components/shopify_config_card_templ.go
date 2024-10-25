@@ -171,7 +171,7 @@ func ShopifyConfigCard(shopifyConfigs []database.GetShopifyConfigsWithBusinessHo
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a hx-get=\"/create-shopify-config\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\" class=\"btn btn-primary w-96 mt-2\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Ny Shopify Integrasjon</a></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a hx-get=\"/create-shopify-config\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\" class=\"btn btn-primary w-96\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Ny Shopify Integrasjon</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
