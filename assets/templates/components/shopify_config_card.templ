@@ -1,42 +1,42 @@
 package components
 
-templ ShopifyConfigCard() {
+import "svipp-server/internal/database"
+import "svipp-server/pkg/util"
+import "strings"
+
+templ ShopifyConfigCard(shopifyConfigs []database.GetShopifyConfigsWithBusinessHoursNextTwoDaysRow) {
+
 <div class="flex flex-col items-center p-4">
-<div id="storeConfig" class="card bg-base-100 w-96 shadow-xl my-2">
-  <div class="card-body">
-    <h2 class="card-title">Store Name</h2>
-    <p><span class="font-semibold">Address:</span> address 22, zip</p>
-    <div class="grid grid-cols-[auto,1fr] gap-x-2">
-      <span class="font-semibold">Idag's Hentevindu:</span>
-      <span>10:00 - 20:00</span>
-
-      <span class="font-semibold">Imorgen's Hentevindu:</span>
-      <span>10:00 - 20:00</span>
-    </div>
-    <div class="card-actions justify-end">
-      <!-- You can add a button here if needed, or remove this div if not -->
-    </div>
-  </div>
-</div>
-
-
-
-<div id="storeConfig" class="card bg-base-100 w-96 shadow-xl my-2">
-    <div class="card-body">
-      <h2 class="card-title">Store Name</h2>
-      <p><span class="font-semibold">Address:</span> address 22, zip</p>
-      <div class="grid grid-cols-[auto,1fr] gap-x-2">
-        <span class="font-semibold">Idag's Hentevindu:</span>
-        <span>10:00 - 20:00</span>
-
-        <span class="font-semibold">Imorgen's Hentevindu:</span>
-        <span>10:00 - 20:00</span>
+    for _, config := range shopifyConfigs {
+    <a hx-get={"/shopify/config/" + config.QuoteKey} hx-target="#mainContent"
+    hx-swap="innerHTML" hx-push-url="true" hx-trigger="click" class="block cursor-pointer">
+    <div id="storeConfig" class="card bg-base-100 w-96 shadow-xl my-2 hover:shadow-2xl transition-all duration-200 hover:-translate-y-1">
+        <div class="card-body">
+          <h2 class="card-title">{ *config.LocationName }</h2>
+          <p><span class="font-semibold">Addresse:</span>
+          if config.PickupAddress == nil {
+              Sendes fra Shopify
+            } else {
+              { strings.Split(*config.PickupAddress, ",")[0] }
+            }
+          </p>
+          <div class="grid grid-cols-[auto,1fr] gap-x-2">
+            <span class="font-semibold">Idag's hentevindu:</span>
+            if !config.OpensAt.Valid {
+                <span>Stengt</span>
+            } else {
+                <span>{ util.FormatToClockFromPgTime(config.OpensAt) } - { util.FormatToClockFromPgTime(config.ClosesAt) }</span>
+            }
+            <span class="font-semibold">Imorgen's hentevindu:</span>
+            if !config.OpensAt_2.Valid {
+                <span>Stengt</span>
+            } else {
+                <span>{ util.FormatToClockFromPgTime(config.OpensAt_2) } - { util.FormatToClockFromPgTime(config.ClosesAt_2) }</span>
+            }          </div>
+        </div>
       </div>
-      <div class="card-actions justify-end">
-        <!-- You can add a button here if needed, or remove this div if not -->
-      </div>
-    </div>
-  </div>
+    </a>
+    }
 
   <a
    hx-get="/create-shopify-config"

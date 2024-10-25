@@ -2,23 +2,20 @@ package pages
 
 import "svipp-server/assets/templates/layouts"
 import "svipp-server/assets/templates/components"
+import "svipp-server/internal/database"
 
-templ HomePage(isHtmx bool) {
+templ HomePage(isHtmx bool, shopifyConfigs []database.GetShopifyConfigsWithBusinessHoursNextTwoDaysRow) {
     if !isHtmx {
         @layouts.AuthenticatedLayout("Svipp - Hjem") {
-            <div class="flex flex-col sm:flex-row justify-center">
-                <div class="order-3 sm:order-1">
-                    @components.OrderListView()
-                </div>
-                <!-- Divider for column layout -->
-                <div class="sm:hidden my-8 order-2 border-t border-gray-200"></div>
-                <div class="order-1 sm:order-2">
-                    @components.ShopifyConfigCard()
-                </div>
-            </div>
+            @HomePageContent(shopifyConfigs)
         }
     } else {
-            <title>Svipp - Hjem</title>
+        <title>Svipp - Hjem</title>
+        @HomePageContent(shopifyConfigs)
+    }
+}
+
+templ HomePageContent(shopifyConfigs []database.GetShopifyConfigsWithBusinessHoursNextTwoDaysRow) {
             <div class="flex flex-col sm:flex-row justify-center">
                 <div class="order-3 sm:order-1">
                     @components.OrderListView()
@@ -26,8 +23,7 @@ templ HomePage(isHtmx bool) {
                 <!-- Divider for column layout -->
                 <div class="sm:hidden my-8 order-2 border-t border-gray-200"></div>
                 <div class="order-1 sm:order-2">
-                    @components.ShopifyConfigCard()
+                    @components.ShopifyConfigCard(shopifyConfigs)
                 </div>
             </div>
-    }
 }

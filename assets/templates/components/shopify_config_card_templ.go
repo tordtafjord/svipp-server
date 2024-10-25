@@ -8,7 +8,11 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func ShopifyConfigCard() templ.Component {
+import "svipp-server/internal/database"
+import "svipp-server/pkg/util"
+import "strings"
+
+func ShopifyConfigCard(shopifyConfigs []database.GetShopifyConfigsWithBusinessHoursNextTwoDaysRow) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,7 +33,145 @@ func ShopifyConfigCard() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col items-center p-4\"><div id=\"storeConfig\" class=\"card bg-base-100 w-96 shadow-xl my-2\"><div class=\"card-body\"><h2 class=\"card-title\">Store Name</h2><p><span class=\"font-semibold\">Address:</span> address 22, zip</p><div class=\"grid grid-cols-[auto,1fr] gap-x-2\"><span class=\"font-semibold\">Idag's Hentevindu:</span> <span>10:00 - 20:00</span> <span class=\"font-semibold\">Imorgen's Hentevindu:</span> <span>10:00 - 20:00</span></div><div class=\"card-actions justify-end\"><!-- You can add a button here if needed, or remove this div if not --></div></div></div><div id=\"storeConfig\" class=\"card bg-base-100 w-96 shadow-xl my-2\"><div class=\"card-body\"><h2 class=\"card-title\">Store Name</h2><p><span class=\"font-semibold\">Address:</span> address 22, zip</p><div class=\"grid grid-cols-[auto,1fr] gap-x-2\"><span class=\"font-semibold\">Idag's Hentevindu:</span> <span>10:00 - 20:00</span> <span class=\"font-semibold\">Imorgen's Hentevindu:</span> <span>10:00 - 20:00</span></div><div class=\"card-actions justify-end\"><!-- You can add a button here if needed, or remove this div if not --></div></div></div><a hx-get=\"/create-shopify-config\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\" class=\"btn btn-primary w-96 mt-2\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Ny Shopify Integrasjon</a></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col items-center p-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, config := range shopifyConfigs {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a hx-get=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 string
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs("/shopify/config/" + config.QuoteKey)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 11, Col: 51}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\" class=\"block cursor-pointer\"><div id=\"storeConfig\" class=\"card bg-base-100 w-96 shadow-xl my-2 hover:shadow-2xl transition-all duration-200 hover:-translate-y-1\"><div class=\"card-body\"><h2 class=\"card-title\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(*config.LocationName)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 15, Col: 55}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</h2><p><span class=\"font-semibold\">Addresse:</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if config.PickupAddress == nil {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("Sendes fra Shopify")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				var templ_7745c5c3_Var4 string
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Split(*config.PickupAddress, ",")[0])
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 20, Col: 60}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p><div class=\"grid grid-cols-[auto,1fr] gap-x-2\"><span class=\"font-semibold\">Idag's hentevindu:</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if !config.OpensAt.Valid {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span>Stengt</span> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(util.FormatToClockFromPgTime(config.OpensAt))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 28, Col: 68}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" - ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(util.FormatToClockFromPgTime(config.ClosesAt))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 28, Col: 120}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span class=\"font-semibold\">Imorgen's hentevindu:</span> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if !config.OpensAt_2.Valid {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span>Stengt</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var7 string
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(util.FormatToClockFromPgTime(config.OpensAt_2))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 34, Col: 70}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" - ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var8 string
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(util.FormatToClockFromPgTime(config.ClosesAt_2))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `assets/templates/components/shopify_config_card.templ`, Line: 34, Col: 124}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></div></a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<a hx-get=\"/create-shopify-config\" hx-target=\"#mainContent\" hx-swap=\"innerHTML\" hx-push-url=\"true\" hx-trigger=\"click\" class=\"btn btn-primary w-96 mt-2\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Ny Shopify Integrasjon</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

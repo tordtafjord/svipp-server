@@ -165,6 +165,69 @@ func (q *Queries) GetShopifyConfigs(ctx context.Context, businessID int64) ([]Sh
 	return items, nil
 }
 
+const getShopifyConfigsWithBusinessHoursNextTwoDays = `-- name: GetShopifyConfigsWithBusinessHoursNextTwoDays :many
+SELECT
+    s.quote_key, s.pickup_address, s.pickup_coords, s.pickup_instructions, s.location_name,
+    b1.day_of_week, b1.opens_at, b1.closes_at,
+    b2.day_of_week, b1.opens_at, b2.closes_at
+FROM shopify_api_config s
+LEFT JOIN business_hours b1 ON s.api_key = b1.api_key AND b1.day_of_week = $1
+LEFT JOIN business_hours b2 ON s.api_key = b2.api_key AND b2.day_of_week = $1 + 1
+WHERE s.business_id = $2
+AND s.deleted_at IS NULL
+`
+
+type GetShopifyConfigsWithBusinessHoursNextTwoDaysParams struct {
+	DayOfWeek  int32 `json:"dayOfWeek"`
+	BusinessID int64 `json:"businessId"`
+}
+
+type GetShopifyConfigsWithBusinessHoursNextTwoDaysRow struct {
+	QuoteKey           string      `json:"quoteKey"`
+	PickupAddress      *string     `json:"pickupAddress"`
+	PickupCoords       interface{} `json:"pickupCoords"`
+	PickupInstructions *string     `json:"pickupInstructions"`
+	LocationName       *string     `json:"locationName"`
+	DayOfWeek          *int32      `json:"dayOfWeek"`
+	OpensAt            pgtype.Time `json:"opensAt"`
+	ClosesAt           pgtype.Time `json:"closesAt"`
+	DayOfWeek_2        *int32      `json:"dayOfWeek2"`
+	OpensAt_2          pgtype.Time `json:"opensAt2"`
+	ClosesAt_2         pgtype.Time `json:"closesAt2"`
+}
+
+func (q *Queries) GetShopifyConfigsWithBusinessHoursNextTwoDays(ctx context.Context, arg GetShopifyConfigsWithBusinessHoursNextTwoDaysParams) ([]GetShopifyConfigsWithBusinessHoursNextTwoDaysRow, error) {
+	rows, err := q.db.Query(ctx, getShopifyConfigsWithBusinessHoursNextTwoDays, arg.DayOfWeek, arg.BusinessID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetShopifyConfigsWithBusinessHoursNextTwoDaysRow
+	for rows.Next() {
+		var i GetShopifyConfigsWithBusinessHoursNextTwoDaysRow
+		if err := rows.Scan(
+			&i.QuoteKey,
+			&i.PickupAddress,
+			&i.PickupCoords,
+			&i.PickupInstructions,
+			&i.LocationName,
+			&i.DayOfWeek,
+			&i.OpensAt,
+			&i.ClosesAt,
+			&i.DayOfWeek_2,
+			&i.OpensAt_2,
+			&i.ClosesAt_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertBusinessHours = `-- name: UpsertBusinessHours :exec
 INSERT INTO business_hours (api_key, day_of_week, opens_at, closes_at)
 SELECT $1, unnest($2::int[]) AS day_of_week, unnest($3::time[]), unnest($4::time[])

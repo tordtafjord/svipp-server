@@ -10,7 +10,9 @@ import (
 	"strings"
 	"svipp-server/assets/templates/pages"
 	"svipp-server/internal/auth"
+	"svipp-server/internal/database"
 	"svipp-server/internal/httputil"
+	"time"
 )
 
 func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +24,17 @@ func (h *Handler) FrontPage(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	isHxReq := httputil.IsHxRequest(r)
-	err := pages.HomePage(isHxReq).Render(r.Context(), w)
+	userId, err := auth.GetUserIdFromCtx(r.Context())
+	if err != nil {
+		httputil.InternalServerError(w, err)
+	}
+
+	shopifyConfigs, err := h.db.GetShopifyConfigsWithBusinessHoursNextTwoDays(r.Context(), database.GetShopifyConfigsWithBusinessHoursNextTwoDaysParams{
+		DayOfWeek:  int32(time.Now().Weekday()),
+		BusinessID: userId,
+	})
+
+	err = pages.HomePage(isHxReq, shopifyConfigs).Render(r.Context(), w)
 	if err != nil {
 		httputil.InternalServerError(w, err)
 	}
