@@ -2648,6 +2648,10 @@ html {
   padding-bottom: 1rem;
 }
 
+.pr-20 {
+  padding-right: 5rem;
+}
+
 .text-center {
   text-align: center;
 }

@@ -19,10 +19,14 @@ FROM shopify_api_config WHERE quote_key = $1 AND deleted_at IS NULL;
 -- name: GetShopifyConfigs :many
 SELECT * FROM shopify_api_config WHERE business_id = $1 AND deleted_at IS NULL;
 
--- name: InsertBusinessHours :many
+-- name: UpsertBusinessHours :exec
 INSERT INTO business_hours (api_key, day_of_week, opens_at, closes_at)
 SELECT $1, unnest(@day_of_week::int[]) AS day_of_week, unnest(@opening_times::time[]), unnest(@closing_times::time[])
-RETURNING day_of_week, opens_at, closes_at;
+ON CONFLICT (api_key, day_of_week)
+DO UPDATE SET
+    opens_at = EXCLUDED.opens_at,
+    closes_at = EXCLUDED.closes_at;
 
 -- name: GetBusinessHours :many
 SELECT opens_at, closes_at FROM business_hours WHERE api_key = $1 ORDER BY day_of_week ASC;
+

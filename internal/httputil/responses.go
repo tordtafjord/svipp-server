@@ -85,6 +85,7 @@ func ForbiddenResponse(writer http.ResponseWriter, isHtmx bool) {
 }
 
 func YellowToastResponse(w http.ResponseWriter, r *http.Request, errors []string) {
+	w.Header().Add("HX-Retarget", "#toasts")
 	err := components.YellowToasts(errors).Render(r.Context(), w)
 	if err != nil {
 		log.Printf("Failed to render yellow toast template.")

@@ -165,46 +165,28 @@ func (q *Queries) GetShopifyConfigs(ctx context.Context, businessID int64) ([]Sh
 	return items, nil
 }
 
-const insertBusinessHours = `-- name: InsertBusinessHours :many
+const upsertBusinessHours = `-- name: UpsertBusinessHours :exec
 INSERT INTO business_hours (api_key, day_of_week, opens_at, closes_at)
 SELECT $1, unnest($2::int[]) AS day_of_week, unnest($3::time[]), unnest($4::time[])
-RETURNING day_of_week, opens_at, closes_at
+ON CONFLICT (api_key, day_of_week)
+DO UPDATE SET
+    opens_at = EXCLUDED.opens_at,
+    closes_at = EXCLUDED.closes_at
 `
 
-type InsertBusinessHoursParams struct {
+type UpsertBusinessHoursParams struct {
 	ApiKey       []byte        `json:"apiKey"`
 	DayOfWeek    []int32       `json:"dayOfWeek"`
 	OpeningTimes []pgtype.Time `json:"openingTimes"`
 	ClosingTimes []pgtype.Time `json:"closingTimes"`
 }
 
-type InsertBusinessHoursRow struct {
-	DayOfWeek int32       `json:"dayOfWeek"`
-	OpensAt   pgtype.Time `json:"opensAt"`
-	ClosesAt  pgtype.Time `json:"closesAt"`
-}
-
-func (q *Queries) InsertBusinessHours(ctx context.Context, arg InsertBusinessHoursParams) ([]InsertBusinessHoursRow, error) {
-	rows, err := q.db.Query(ctx, insertBusinessHours,
+func (q *Queries) UpsertBusinessHours(ctx context.Context, arg UpsertBusinessHoursParams) error {
+	_, err := q.db.Exec(ctx, upsertBusinessHours,
 		arg.ApiKey,
 		arg.DayOfWeek,
 		arg.OpeningTimes,
 		arg.ClosingTimes,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []InsertBusinessHoursRow
-	for rows.Next() {
-		var i InsertBusinessHoursRow
-		if err := rows.Scan(&i.DayOfWeek, &i.OpensAt, &i.ClosesAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return err
 }

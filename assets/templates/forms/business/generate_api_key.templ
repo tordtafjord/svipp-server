@@ -2,11 +2,12 @@ package business
 import "strconv"
 
 templ GenerateApiKeyForm() {
+
 <div class="flex justify-center min-h-screen">
 <div class="card bg-base-100 shadow-2xl max-w-lg">
   <div class="card-body">
     <h2 class="card-title mb-4">Ny Shopify Konfigurasjon</h2>
-    <form class="space-y-4" hx-post="api/shopify-api" hx-target="#toasts" hx-indicator="#loading">
+    <form class="space-y-4" hx-post="/api/business/shopify-config" hx-target="#mainContent" hx-indicator="#loading">
       <div class="form-control">
         <label for="locationName" class="label">Lokasjonsnavn</label>
         <input type="text" id="locationName" name="locationName" required class="input input-bordered w-full">
@@ -15,7 +16,7 @@ templ GenerateApiKeyForm() {
             <div class="form-control" >
               <label class="label cursor-pointer justify-start gap-2">
                 <span class="label-text">Bruk adresse sendt fra Shopify</span>
-                <input type="checkbox" id="useShopifyAddress" class="checkbox" onchange="toggleAddressFields()">
+                <input type="checkbox" id="useShopifyAddress" name="useShopifyAddress" class="checkbox" onchange="toggleAddressFields()">
               </label>
             </div>
 
@@ -52,16 +53,16 @@ templ GenerateApiKeyForm() {
     <label class="label" for="pickupInstructions">
         Hente-Instruksjoner
     </label>
-    <textarea id="pickupInstructions" class="textarea textarea-bordered h-24"></textarea>
+    <textarea id="pickupInstructions" name="pickupInstructions" class="textarea textarea-bordered h-24"></textarea>
 </div>
 
     <h3 class="card-title mb-4">Vindu for henting av varer</h3>
     for i, day := range []string{"Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"} {
         <div class="form-control">
-            <label class="label" for="{i}Start">{ day }</label>
+            <label class="label" for={day}>{ day }</label>
             <div class="flex space-x-2">
-                <input type="time" id={strconv.Itoa(i) + "Start" } class="input input-bordered w-1/2" />
-                <input type="time" id={strconv.Itoa(i) + "End"} class="input input-bordered w-1/2" />
+                @TimeInput(strconv.Itoa(i) + "Start")
+                @TimeInput(strconv.Itoa(i) + "End")
             </div>
         </div>
     }
@@ -74,4 +75,8 @@ templ GenerateApiKeyForm() {
   </div>
 </div>
 </div>
+}
+
+templ TimeInput(name string) {
+    <input type="time" id={ name } name={ name } class="input input-bordered w-1/2" />
 }

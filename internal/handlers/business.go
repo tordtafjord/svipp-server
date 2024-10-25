@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/jackc/pgx/v5/pgtype"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,6 +12,8 @@ import (
 	"svipp-server/internal/httputil"
 	"svipp-server/internal/models"
 	"svipp-server/internal/password"
+	"svipp-server/pkg/util"
+	"time"
 )
 
 type createBusinessAccountRequest struct {
@@ -29,28 +32,18 @@ type createBusinessAccountRequest struct {
 }
 
 type NewShopifyConfigForm struct {
-	LocationName       string `json:"locationName" validate:"required"`
-	UseShopifyAddress  bool   `json:"useShopifyAddress"`
-	Address            string `json:"address" validate:"omitempty"`
-	ZipCode            string `json:"zipCode" validate:"omitempty,numeric"`
-	City               string `json:"city" validate:"omitempty"`
-	PickupInstructions string `json:"pickupInstructions" validate:"omitempty"`
-	PickupWindows      PickupWindowsStruct
+	LocationName       string         `json:"locationName" validate:"required"`
+	UseShopifyAddress  bool           `json:"useShopifyAddress"`
+	Address            *string        `json:"address" validate:"omitempty"`
+	ZipCode            *string        `json:"zipCode" validate:"omitempty,numeric"`
+	City               *string        `json:"city" validate:"omitempty"`
+	PickupInstructions *string        `json:"pickupInstructions" validate:"omitempty"`
+	PickupWindows      []PickupWindow `json:"pickupWindows" validate:"dive"`
 }
 
 type PickupWindow struct {
 	Start string `json:"start" validate:"omitempty,datetime=15:04"`
 	End   string `json:"end" validate:"omitempty,datetime=15:04"`
-}
-
-type PickupWindowsStruct struct {
-	Monday    PickupWindow
-	Tuesday   PickupWindow
-	Wednesday PickupWindow
-	Thursday  PickupWindow
-	Friday    PickupWindow
-	Saturday  PickupWindow
-	Sunday    PickupWindow
 }
 
 func (h *Handler) CreateShopifyConfig(w http.ResponseWriter, r *http.Request) {
@@ -61,22 +54,22 @@ func (h *Handler) CreateShopifyConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pickupWindows := PickupWindowsStruct{
-		Monday:    PickupWindow{Start: r.FormValue("0Start"), End: r.FormValue("0End")},
-		Tuesday:   PickupWindow{Start: r.FormValue("1Start"), End: r.FormValue("1End")},
-		Wednesday: PickupWindow{Start: r.FormValue("2Start"), End: r.FormValue("2End")},
-		Thursday:  PickupWindow{Start: r.FormValue("3Start"), End: r.FormValue("3End")},
-		Friday:    PickupWindow{Start: r.FormValue("4Start"), End: r.FormValue("4End")},
-		Saturday:  PickupWindow{Start: r.FormValue("5Start"), End: r.FormValue("5End")},
-		Sunday:    PickupWindow{Start: r.FormValue("6Start"), End: r.FormValue("6End")},
+	pickupWindows := []PickupWindow{
+		PickupWindow{Start: r.FormValue("0Start"), End: r.FormValue("0End")},
+		PickupWindow{Start: r.FormValue("1Start"), End: r.FormValue("1End")},
+		PickupWindow{Start: r.FormValue("2Start"), End: r.FormValue("2End")},
+		PickupWindow{Start: r.FormValue("3Start"), End: r.FormValue("3End")},
+		PickupWindow{Start: r.FormValue("4Start"), End: r.FormValue("4End")},
+		PickupWindow{Start: r.FormValue("5Start"), End: r.FormValue("5End")},
+		PickupWindow{Start: r.FormValue("6Start"), End: r.FormValue("6End")},
 	}
 
 	params := NewShopifyConfigForm{
 		LocationName:       r.FormValue("locationName"),
-		Address:            r.FormValue("address"),
-		ZipCode:            r.FormValue("zipCode"),
-		City:               r.FormValue("city"),
-		PickupInstructions: r.FormValue("pickupInstructions"),
+		Address:            util.StringToPtr(r.FormValue("address")),
+		ZipCode:            util.StringToPtr(r.FormValue("zipCode")),
+		City:               util.StringToPtr(r.FormValue("city")),
+		PickupInstructions: util.StringToPtr(r.FormValue("pickupInstructions")),
 		UseShopifyAddress:  r.FormValue("useShopifyAddress") == "true" || r.FormValue("useShopifyAddress") == "on",
 		PickupWindows:      pickupWindows,
 	}
@@ -93,28 +86,64 @@ func (h *Handler) CreateShopifyConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var addr *string
-	if !params.UseShopifyAddress {
-		// Create the address string and assign its address to addr
+	if params.Address == nil || params.ZipCode == nil || params.City == nil {
+		if !params.UseShopifyAddress {
+			httputil.YellowToastResponse(w, r, []string{"Mangler gyldig addresse"})
+			return
+		}
+	} else {
 		address := fmt.Sprintf("%s, %s %s", params.Address, params.ZipCode, params.City)
 		addr = &address
 	}
 
 	shopifyConfig := database.CreateShopifyApiKeyParams{
-		BusinessID:         userId,
+		BusinessID:         int64(userId),
 		LocationName:       &params.LocationName,
 		PickupAddress:      addr,
 		PickupCoords:       nil,
-		PickupInstructions: &params.PickupInstructions,
+		PickupInstructions: params.PickupInstructions,
 	}
 
-	_, token, err := h.authService.CreateShopifyApiKey(r.Context(), shopifyConfig)
+	apiKey, token, err := h.authService.CreateShopifyApiKey(r.Context(), shopifyConfig)
 	if err != nil {
 		log.Printf("Failed to create shopify api config")
 		httputil.RedToastResponse(w, r, "Error: Intern Serverfeil")
 		return
 	}
 
-	//TODO: INSERT BUSINESS HOURS
+	// Convert pickup windows to arrays for bulk insert
+	var (
+		daysOfWeek   = make([]int32, 0, 7) // 0-6 for Monday-Sunday
+		openingTimes = make([]pgtype.Time, 0, 7)
+		closingTimes = make([]pgtype.Time, 0, 7)
+	)
+
+	for i, window := range pickupWindows {
+		opens, closes := util.TimeInputToPgTime(window.Start), util.TimeInputToPgTime(window.End)
+		if opens.Valid && closes.Valid {
+			daysOfWeek = append(daysOfWeek, int32(i))
+			openingTimes = append(openingTimes, opens)
+			closingTimes = append(closingTimes, closes)
+			continue
+		}
+
+		if opens.Valid || closes.Valid {
+			httputil.YellowToastResponse(w, r, []string{fmt.Sprintf("%s pickup window is not complete", time.Weekday(i))})
+			return
+		}
+	}
+
+	err = h.db.UpsertBusinessHours(r.Context(), database.UpsertBusinessHoursParams{
+		ApiKey:       apiKey[:],
+		DayOfWeek:    daysOfWeek,
+		OpeningTimes: openingTimes,
+		ClosingTimes: closingTimes,
+	})
+	if err != nil {
+		log.Printf("Failed to insert business hours")
+		httputil.RedToastResponse(w, r, "Error: Intern Serverfeil")
+		return
+	}
 
 	err = components.ApiKeyModal(token).Render(r.Context(), w)
 	if err != nil {
